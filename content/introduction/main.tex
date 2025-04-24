@@ -1,0 +1,53 @@
+\section{Introduction}
+\label{sec:introduction}
+
+An important variant of the consensus problem \cite{JACM:PeaShoLam80} that has recently gained significant attention asks for the maintenance and continuous extension of a ledger of transactions.
+%
+This ``ledger'' variation of the classical consensus problem has two fundamental objectives.
+%
+\emph{Consistency:} the ledgers in the views of any two participants are consistent with each other in the sense that they are either equal, or one is a prefix of the other.
+%
+\emph{Liveness:} there is a time bound, after which, any valid transaction will be incorporated in the view of the ledger of any honest participant.
+%
+It is easy to see that these two properties individually can be easily satisfied by trivial protocols, however achieving them in tandem is an interesting protocol design question.
+
+Ledger consensus is covered within the context of state machine replication (SMR) \cite{CSUR:Schneider90}.
+%
+More recently, the Bitcoin blockchain protocol \cite{Nak08} provided a solution in a ``permissionless'' setting where participants do not know of each other and only a public setup operation is permitted.
+%
+The protocol and its properties has been analyzed over a sequence of works \cite{EC:GarKiaLeo15,EC:PasSeeash17,C:GarKiaLeo17} that established its explicit guarantees regarding liveness and consistency.
+
+The main task of a ledger consensus protocol is to continuously serialize the submitted transactions.
+%
+While such serialization is not necessary for all applications of transaction services (e.g., payments is a notable exception \cite{NDSS:DanMei16,DC:GKMPS22}), serialization is of critical importance in the context of smart contracts.
+%
+Indeed, when multiple parties interact with the same contract, the ordering of transactions can be crucial in terms of the effects that each transaction may have on the smart contract state.
+%
+Observe that the properties of consistency and liveness necessitate that a certain serialization must take place (as the ledger must be well defined as a sequence of transactions) nevertheless do not impose a lot of constraints on that serialization except for the straightforward fact that transactions submitted very far apart from each other (in particular at least one full liveness property window) will be serialized in the order they were submitted.
+
+This state of affairs leaves undetermined how transactions that are submitted more closely to each other should be serialized.
+%
+This is by far not a theoretical consideration: by exploiting the behavior of Ethereum decentralized finance (DeFi) contracts
+it was shown how to deploy Miner Extractable Value (MEV) attacks \cite{SP:DGKLZB20} that exploit the ability of Ethereum miners to influence transaction serialization.
+%
+By strategically placing suitable DeFi transactions in the serialization order of submitted transactions, miners gain additional profits (beyond what is provided in terms of transaction fees and newly minted coins associated with block production).
+
+Motivated by mitigating such MEV attacks, a series of works attempted to enhance the ledger with a fair-order policy based on the maintainers' local receiving time of transactions.
+%
+Two main directions emerged in this line of ``receiver order fairness'' approach.
+%
+On one hand, batch order fairness \cite{C:KZGJ20,ACCS:KDK22} (and later further improvements \cite{FC:CMSZ22,EC:KiaLeoShe24}) focus on defining valid transaction order based on their local \emph{relative} order.
+%
+On the other hand, by assuming a system-wide clock, timed order fairness \cite{AFT:Kursawe20,OSDI:ZSCZA20} specifies a suitable order for a pair of transactions, if there is a point in time $t$ such that all honest parties receive one transaction before $t$ and the other transaction after $t$.
+
+It is worth observing that looking at the receiving end of transaction dissemination, provides at best modest protection against front-running attacks as it pits the adversary in a network game against the honest parties: the adversary may still attempt to front-run when it becomes aware of a transaction by rushing the network delivery of its own transactions.
+%
+Such attacks violate what is known as ``input causality'' a concept studied early by Reiter and Birman \cite{ReiBir94} with the aim to protect against an adversary that settles a transaction that depends in a meaningful way on transactions that are pending.
+%
+This property has been later studied in the context of atomic broadcast by Cachin \textit{et al.} \cite{C:CKPS01} and recently in blockchain systems by Malkhi and Szalachowski \cite{TOKENOMICS:MalSza23}.
+%
+It can be seen that input causality complements receiver order fairness as it focuses on the sender side and tries to protect transactions in transit from being meaningfully front-run.
+%
+Nevertheless input causality cannot entirely substitute receiver order considerations, since, even if input causality holds perfectly, one would still want to mandate that serialization adheres to a fairness criterion that attempts to serialize transactions in a way consistent with the timings that they were generated, disseminated and received by the ledger maintainers.\footnote{To see why by an example, consider two DeFi traders that react to an external signal and perform a certain type of transaction (e.g., selling an asset). They are not aware of each other's transaction so input causality is not a consideration; but it is still desirable that the system respects the order with which they submit their transactions. }
+
+\input{content/introduction/our-results}

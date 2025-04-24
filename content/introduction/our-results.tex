@@ -1,0 +1,198 @@
+\subsection{Our Results}
+\label{subsec:our-results}
+
+Motivated by the above considerations we set out to model formally in the universal composition (UC) setting \cite{FOCS:Canetti01} the concept of order fair transaction serialization and realize it under plausible assumptions in a proof-of-work (PoW) setting.
+
+Our starting point is the previous UC formalization of \cite{C:BMTZ17} that focused on abstracting ledger consensus as an ideal functionality and showing how it can be realized in the PoW setting.
+%
+One of the key features of this functionality is its ledger ``extend policy'' that allows the ideal world adversary to drive the progress of the ledger while being subject only to the liveness and ``chain quality'' properties \cite{EC:GarKiaLeo15}.
+%
+Note that no order fairness is provided by this functionality as the adversary is free to choose the order of pending transactions at will and even inject transactions adaptively, based on the transactions that honest parties have submitted for inclusion to the ledger.
+
+\paragraph{Modeling.}
+%
+To capture comprehensively all fair ordering considerations, we adapt the ledger functionality of \cite{C:BMTZ17} so that:
+%
+(i) It only leaks to the adversary transaction identifiers that do not carry any information about the transactions themselves.
+%
+The adversary has to commit first to an ordering and then subsequently the contents of the transactions are revealed so that the ledger can be assembled.
+%
+(ii) It offers a parametric extend policy that constraints the adversary to follow an order that belongs to a class of admissible reorderings of the input transactions.
+%
+Observe that this two-pronged approach combines input causality and receiver fair order considerations.
+%
+This ideal functionality model results to a class of fair ledgers.
+
+The most stringiest extend policy one can imagine for serializing transactions is the exact order that they were submitted to the ideal functionality.
+%
+Note that in many ways such a ``perfect'' order is unreasonable; taking into account the global clock in the model, it could be the case that two transactions are ``simultaneously'' delivered w.r.t. the global clock.
+%
+It follows that even though the perfect transaction order is available to the ideal functionality, it would be unreasonable to expect to realize it.
+%
+Following this, our strictest formalization of sender order fairness is the one that restricts the adversary to conform to the arrival times to the ledger functionality as recorded by the global clock functionality.
+%
+It is easy to see that one cannot expect to realize that level of fairness either.
+%
+The reason is that in any setting where transaction delivery is not instantaneous (a setting that covers pretty much all reasonable deployment scenarios), there is no conceivable way that a ledger system can obey it.
+%
+We formalize this result and in fact prove a much stronger \emph{relativized} version of this impossibility theorem: even given any ``private'' helper functionality (i.e., one that is just responding to the caller) and a correlated random string, it is infeasible to achieve sender order fairness in a network with bounded delays.
+
+The above results suggest that a relaxation is in order.
+%
+To capture this, we introduce a natural but more relaxed sender order fairness property, $\delta$-approximate order fairness, where the adversary is allowed to violate sender order fairness but only in a limited way, namely for transactions that are sent $\delta$ time apart.
+%
+It is easy to show that our impossibility result for sender order fairness extends to the setting where $\delta$ is below the network delay \delay, even in the relativized sense as described above.
+%
+This leaves open the question of whether there exists a plausible helper functionality under which we can prove \delay-approximate order fairness.
+
+It will not take long for the reader to guess a helper ideal functionality under which it is fairly easy to achieve our \delay-approximate sender order fairness formulation:
+%
+For example, consider a functionality that encrypts all valid transactions and allows parties to disseminate them in an encrypted form so that their validity can be publicly verified and subsequently decrypt them only when they are settled.
+%
+Given such functionality, it is possible for parties to disseminate transactions in an encrypted form and subsequently open them to reconstruct the state of the ledger.
+%
+While this approach can work (and indeed it is folklore, see also \cite{TOKENOMICS:MalSza23} for a specific implementation) it imposes a rather heavy price if it is to be somehow realized from simpler components: it requires a shared private state (in order to facilitate decryption) and an ability to realize that the settlement of the encrypted transactions has taken place (since premature decryption of transactions would break security).
+%
+Maintaining a shared private state can be expensive in the permissionless setting, e.g., using techniques such as YOSO MPC \cite{TCC:BGGHKL20} it is possible for a committee to keep redistributing a secret-key of a threshold encryption function --- with the downside of a quadratic communication complexity (in the security parameter) overhead at each round to facilitate the continuous re-sharing of the private key between successive committees.
+
+Instead, poised to obtain a construction relevant to practice, we focus on the concept of a private functionality, thinking of it as a trusted execution enclave in the model of~\cite{EC:PasShiTra17}.
+%
+We ask whether it is possible to realize our approximate sender anonymous ledger functionality in a hybrid setting where the private functionality is instantiated as an enclave and is seeded only by an initialization string that is drawn from the correlated randomness functionality (this captures the ability of an enclave to be safely initialized by the enclave issuer).
+%
+In particular this means that our enclave functionality does not have any shared private state across different enclave instances: each enclave has its own independent signing and encryption key.
+%
+Finally, we also insist on transaction submission being a public operation that does not require access to an enclave.
+
+\paragraph{Protocol overview.}
+%
+We first show how to enforce input-causality, and then we show how to lift the security of our protocol to realize a ledger that has \delay-approximate order fairness.
+%
+Our protocol is built on top of a Nakamoto-style PoW blockchain \chain, whose maintainers are equipped with a stateless\footnote{By stateless here we mean without secure counters, or without any mechanism that prevents the adversary from resetting the enclave.} trusted execution environment\cite{EPRINT:CosDev16} (enclave for brevity).
+%
+Each enclave is equipped with its own public-key encryption key pair $(\pk, \sk)$\footnote{Note that in the hybrid model where communication takes place strictly via the diffusion functionality \funcDiffuse that we use to model the peer-to-peer network, sharing a secret key \sk among $n$ enclaves requires diffusing $n$ distinct messages from a single source --- a prohibitive overhead. Contrary, in our protocol, in the worst case, each party has to diffuse polylogarithmic in the number of enclaves sized messages. Combining the capabilities of the enclave with the gossiping protocol over point-to-point channels may improve communication complexity --- we leave exploring this interesting direction for future work.}, where only \pk is revealed, while \sk is hidden to everyone (including the owner of the enclave).
+%
+Every output generated by the enclave is signed with a secret key known only to the enclave, but verifiable by anyone holding an \emph{attested} verification key $\mathsf{VK}$.
+
+We require the maintainers to publish the enclave public-keys $(\pk, \mathsf{VK})$ on the blockchain\footnote{The maintainer will also issue the hash of the code that the enclave will run, which will make sure that every registered enclave will behave accordingly to what our protocol prescribes.}, upon registration.
+%
+When a client wants to issue a transaction \tx, it first samples a subset of polylogarithmic size $\mathsf{S}_\pk$ of the registered public-keys (more detail on how $\mathsf{S}_\pk$ is chosen is provided later) and encrypts $(\tx, h)$ using all the selected public keys, where $h$ corresponds to the block-header of \chain, thus obtaining a set of ciphertexts $ct$.
+%
+Then, the client generates a zero-knowledge proof $\pi$ proving that all the ciphertexts contain the same transaction and that this transaction is not equal to $0^\kappa$.
+%
+The client then diffuses to the network $(ct, \pi)$.
+
+Each maintainer verifies the zero-knowledge proof, and if valid, it selects the ciphertext generated using its public key \pk (if such a ciphertext does not exist, then $(ct, \pi)$ is simply ignored).
+%
+Then the maintainer queries the enclave with the ciphertext along with $h'$, which corresponds to the current blockchain header.
+%
+Upon receiving the query, the enclave decrypts the ciphertext, thus obtaining the pair $(\tx, h)$ and checks how many blocks apart the chain with header $h$ is compared to $h'$.
+%
+If the number of blocks is more than $\Lambda$, then the enclave returns \tx to the caller, else it waits to receive a new block header that satisfies the above condition.
+
+This mechanism guarantees that an honest transaction can be decrypted only after a minimum amount of time, which is defined by the number of rounds required to add $\Lambda$ blocks to the PoW blockchain.
+%
+Moreover, the selection of $\mathsf{S}_\pk$ guarantees that at least one public-key in the set belongs to an honest maintainer (more detail on this later), hence, the honest transactions will be surely decrypted.
+%
+Once \tx is obtained, it is diffused to the network, and it is the maintainers' goal now to include \tx in the blockchain.
+%
+Given that the underlying blockchain protocol we devise provides liveness, we are guaranteed that all honest transactions will appear in the blockchain.
+
+The above approach seems to not cover the following attack.
+%
+A malicious party could generate a ciphertext, and send it only to corrupted maintainers.
+%
+The maintainers can decrypt the ciphertext as an honest party would, thus obtaining a signature for \tx, and decide whether to diffuse it or not in the network based on honest transactions that have been already decrypted and diffused in the network.
+%
+This form of \emph{adaptive rejection} is clearly incompatible with our goals.
+
+To solve this problem we design a selection process for the set $\mathsf{S}_\pk$, which guarantees that the party generating the set (even if it is corrupted) always includes in $\mathsf{S}_\pk$ a public-key of an honest maintainer.
+%
+In particular, we prove that as long as some constant fraction of the enclave owners is honest, then $\mathsf{S}_\pk$ will contain with overwhelming probability at least one public-key of an honest party.
+%
+We note that this could be achieved by simply requiring each transaction issuer to encrypt the transaction using all the enclave public keys.
+%
+We instead propose an approach that yields the set $\mathsf{S}_\pk$ being of polylogarithmic size.
+%
+We refer the reader to the technical section for more details on this.
+%
+On a final note, we stress that the enclaves we use are quite simple.
+%
+In particular, no synchronization is required among them, and the adversary has full control of the internal clock of the enclaves it owns.
+
+\paragraph{Transaction timestamping.}
+%
+We will now argue how to modify the blockchain \chain, to finally realize our ledger with \delay-approximate order fairness (recall that \delay denotes the network delay).
+%
+We modify the Nakamoto-style PoW \chain by binding the mining procedure of the blocks that form the chain \chain with a new type of blocks called \emph{profile blocks}, using \twoforone (pronounced \emph{two-for-one}) PoW~\cite{EC:GarKiaLeo15}.
+%
+In \twoforone PoW, a hash function output $u$ is checked twice for $u$ and its reversed bit-string \stringReverse{u}.
+%
+If $u< T$, a block that extends the chain \chain is produced; and if $\stringReverse{u} < T$, a new profile block (\PB) is mined (which we will detail soon).
+%
+In such a way, the mining procedure of the chain \chain and profile blocks are \emph{bound} together and the adversary cannot gain advantage on either type of block by dropping from mining the other.
+
+The blockchain \chain we use for our protocol is a sequence of blocks and all validation algorithms follow the longest-chain rule.
+%
+The only difference between our chain \chain and that in, e.g., Bitcoin, is that blocks in \chain do not include transactions directly.
+%
+The profile blocks instead are those storing the actual transactions, which in our case will correspond to a list of pairs of the form $(\txTag, t)$ where $\txTag=(ct, \pi)$ (which represents a \emph{transaction identifier}) and $t$ denotes the local receiving time.
+%
+For a transaction \tx with identifier \txTag to be declared as \emph{included} in a block \block of the ledger, our protocol requires that the majority of the profile blocks connected to \PBWindowLen consecutive blocks report $(\txTag, \cdot)$.
+%
+In a nutshell, we require each party generating a profile block to vote for the transaction and the position this transaction should finally have once it is included in the ledger.
+
+In more detail, we employ two additional parameters for validating profile blocks --- the recency parameter \recencyParam, which is used to guarantee the freshness of profile blocks, and the profile window length parameter \PBWindowLen.
+%
+Specifically, a profile block \PB should be allowed to be connected to a valid block \block in the settled part of the blockchain, only if \PB has not been mined too long ago.
+%
+Let $\ell$ denote the height of block \block that \PB attaches to.
+%
+\PB is considered as a valid profile block only when \PB is included in blocks with height less than $\ell + \recencyParam$.
+
+Finally, the timestamp of \tx (or, its position in the final ledger) is computed by calculating the median timestamps of \txTag from all profile blocks included in blocks with height at most $\ell + \PBWindowLen$.
+%
+Note that if a profile block in the \PBWindowLen-block window does not report an entry $(\txTag, \cdot)$, it is counted as reporting $(\txTag, +\infty)$ (i.e., the miner had never received \tx thus cannot decrypt it).
+%
+Formally, the timestamping of the transaction is computed as follows:
+%
+\[ \timestamp{\txTag} \triangleq \med \{ t \mathbin|  (\txTag, t) \in \PB \in B \wedge \ell \le \mathsf{height}(B) < \ell + \PBWindowLen\}. \]
+%
+The median provides \delay-order fairness because we can argue that in the \PBWindowLen-block window associated with \txTag the majority of the timestamps are generated by honest parties.
+
+\paragraph{On the enclave assumption.}
+%
+For our protocol we rely on enclaves, and one may wonder whether the use of enclaves trivializes the problem we are trying to solve.
+%
+Indeed, it could be that realizing a ledger that achieves $\delta$-order fairness with $\delta < \delay$ becomes a trivial task with such assumptions.
+%
+We prove that our result is optimal.
+%
+In particular, we argue that even under stronger assumptions than the ones we use (e.g., enclaves synchronized with each other) it is impossible to design a protocol with better fairness than the one we provide.
+%
+The high-level intuition behind this is that order fairness is strongly influenced by network delay.
+%
+We also conjecture that it is possible to obtain a similarly optimal result by employing out of the box YOSO MPC \cite{TCC:BGGHKL20} with the threshold encryption approach of~\cite{TOKENOMICS:MalSza23} --- nevertheless the relevance of such a construction is of less interest in practice and for this reason we do not pursue it here.
+
+We also highlight that realizing sender order fairness and processing transactions in our protocol requires possession of a trusted enclave and hence it is only possible for permissioned nodes; specifically, in our setting such a ``permissioned'' node refers to a node that has been initialized with such an enclave and can be authenticated as such by other permissioned nodes.
+%
+Note that our protocol is a PoW-based blockchain and hence it allows non-permissioned nodes to still contribute to the protocol without processing encrypted transactions; in fact such un-permissioned blocks may even contain transactions that are submitted unencrypted for which the clients do not wish to have them protected for sender-order fairness.
+%
+As a side remark, this simple observation suggests that our protocol can be implemented as a ``soft-fork'' over bitcoin --- we leave the details of this implementation to be explored in future work.
+
+Additionally, the security of our protocol relies on two assumptions --- honest majority in terms of computational power and a constant fraction of the enclaves being possessed by honest hosts.
+%
+While the second assumption is arguably weaker, we comment on how these two assumptions can be unified into one:
+%
+Suppose all miners are equipped with enclaves and the honest parties account for the majority of computational power yet possess only a minority constant number of enclaves (i.e., the adversary is allowed to possess an arbitrary number of enclaves).
+%
+Our approach is to extend the \twoforone PoW to $3 {\times} 1$ PoW (by checking non-overlapping 0s at different positions of the RO output), thus additionally mining the enclave public keys (each message mines only one key).
+%
+These PoW-ed enclave public keys are included in the blockchain, and the key subset selection procedure is then applied on the set of public keys with \emph{weights} based on their PoW (for instance, a key with two unique PoW-ed messages is weighed two times than another key with one unique message).
+%
+This adaption, with appropriate protocol parametrization, guarantees that the majority of weighted public keys are controlled by honest parties regardless of the fraction of honest keys.
+
+Finally, one may consider it a compromise to use enclaves in a permissionless setting: we argue that this is not the case in practice.
+%
+For instance, it is already the case that Bitcoin miners use specialized hardware to engage in mining and there are a handful of providers that offer such hardware in the market.
+%
+Transitioning to a setting where such specialized hardware is also utilizing a trusted enclave may be a small step --- especially if the benefits are substantial --- as we demonstrate here: optimal sender order fairness.
