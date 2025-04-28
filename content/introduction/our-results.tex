@@ -125,9 +125,9 @@ We will now argue how to modify the blockchain \chain, to finally realize our le
 %
 We modify the Nakamoto-style PoW \chain by binding the mining procedure of the blocks that form the chain \chain with a new type of blocks called \emph{profile blocks}, using \twoforone (pronounced \emph{two-for-one}) PoW~\cite{EC:GarKiaLeo15}.
 %
-In \twoforone PoW, a hash function output $u$ is checked twice for $u$ and its reversed bit-string \stringReverse{u}.
+In \twoforone PoW, a hash function output $u$ is checked twice for $u$ and its reversed bit-string \stringRev{u}.
 %
-If $u< T$, a block that extends the chain \chain is produced; and if $\stringReverse{u} < T$, a new profile block (\PB) is mined (which we will detail soon).
+If $u< T$, a block that extends the chain \chain is produced; and if $\stringRev{u} < T$, a new profile block (\PB) is mined (which we will detail soon).
 %
 In such a way, the mining procedure of the chain \chain and profile blocks are \emph{bound} together and the adversary cannot gain advantage on either type of block by dropping from mining the other.
 
@@ -141,13 +141,13 @@ For a transaction \tx with identifier \txTag to be declared as \emph{included} i
 %
 In a nutshell, we require each party generating a profile block to vote for the transaction and the position this transaction should finally have once it is included in the ledger.
 
-In more detail, we employ two additional parameters for validating profile blocks --- the recency parameter \recencyParam, which is used to guarantee the freshness of profile blocks, and the profile window length parameter \PBWindowLen.
+In more detail, we employ two additional parameters for validating profile blocks --- the recency parameter $R$, which is used to guarantee the freshness of profile blocks, and the profile window length parameter \PBWindowLen.
 %
 Specifically, a profile block \PB should be allowed to be connected to a valid block \block in the settled part of the blockchain, only if \PB has not been mined too long ago.
 %
 Let $\ell$ denote the height of block \block that \PB attaches to.
 %
-\PB is considered as a valid profile block only when \PB is included in blocks with height less than $\ell + \recencyParam$.
+\PB is considered as a valid profile block only when \PB is included in blocks with height less than $\ell + R$.
 
 Finally, the timestamp of \tx (or, its position in the final ledger) is computed by calculating the median timestamps of \txTag from all profile blocks included in blocks with height at most $\ell + \PBWindowLen$.
 %
