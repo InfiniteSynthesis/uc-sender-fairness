@@ -1,0 +1,87 @@
+\begin{cccAlgorithm}
+	{$\mathsf{ExtendPolicy}(\honestInputSeq, \state, \mathtt{NxtBC}, \buffer, \timedState)$}
+	{extend-policy}
+	{The extend policy employed by the fair ledger functionality \funcFairLedger.}
+
+	\begin{algorithmic}[1]
+		\State{$\txSeqProposalDefault \gets \mathsf{DefaultExtension}(\honestInputSeq, \state, \mathtt{NxtBC}, \buffer, \timedState)$}
+
+		\State{$\ledgerTime \gets$ current ledger time (computed from \honestInputSeq)}
+
+		\State{Create local copies of the values \buffer, \state and \timedState.}
+
+		\State{Parse $\mathtt{NxtBC}$ as a vector $((\mathrm{hFlag}_1, \mathtt{NxtBC}_1), \ldots, (\mathrm{hFlag}_n, \mathtt{NxtBC}_n))$}
+
+		\State{$\txSeqProposal \gets \varepsilon$}
+
+		\oneLineIf{$|\state| \ge \mathtt{windowSize}$}{$\tauLow \gets \timedState[|\state| - \mathtt{windowSize} + 1]$ \textbf{else} $\tauLow \gets 0$}
+
+		\State{$\mathsf{oldValidTxMissing} \gets \false$}
+
+		\For{each list $\mathtt{NxtBC}_i$ of transaction IDs}
+
+		\State{Use the txid contained in $\mathtt{NxtBC}_i$ to determine the list of transactions}
+
+		\State{Let $\vec{\tx} = (\tx_1, \ldots , \tx_{|\mathtt{NxtBC}_i|})$ denote the transactions of $\mathtt{NxtBC}_i$}
+
+		\If{$\tx_1$ is not a coinbase trasnaction}
+		\State{\Return \txSeqProposalDefault}
+		\Else
+
+		\State{$\txSeqProposal_i \gets \tx_1$}
+
+		\For{$j = 2$ \textbf{to} $| \mathtt{NxtBC} |$}
+
+		\State{$\st_i \gets \blockify(\txSeqProposal_i)$}
+
+		\LineComment{Default Extension if proposal violates fair order}
+		\oneLineIf{\revisedText{$\mathsf{ValidOrder}(\tx_j, \state \concat \st_i, \buffer) = \false$}}{\revisedText{\Return \txSeqProposalDefault}} \label{code:extend-policy-valid-order}
+
+		\LineComment{Default Extension if proposal includes invalid transaction}
+		\oneLineIf{$\mathsf{ValidTX}(\tx_j, \state \concat \st_i) = \false$}{\Return \txSeqProposalDefault}
+
+		\State{$\txSeqProposal_i \gets \txSeqProposal_i \concat \tx_j$}
+		\EndFor
+
+		\State{$\st_i \gets \blockify(\txSeqProposal_i)$}
+
+		\EndIf
+
+		\LineComment{Test that all old transactions are included.}
+		\For{\revisedText{each $\BTX = (\tx, \txid, \tau', \party) \in \buffer$ s.t. \party is honest and $\tau' < \ledgerTime - \mathtt{waitTime}$}} \label{code:extend-policy-old-tx-condition}
+		\If{$\mathsf{ValidTX}(\tx, \state \concat \st_i) = \true$ \revisedText{\textbf{and} $\mathsf{ValidOrder}(\tx, \state \concat \st_i ,\buffer) = \true$} \textbf{and} $\tx \not\in \txSeqProposal_i$} \label{code:extend-policy-old-tx-order}
+		\State{$\mathsf{oldValidTxMissing} \gets \true$} 
+		\EndIf
+		\EndFor
+
+		\State{$\txSeqProposal \gets \txSeqProposal \concat \txSeqProposal_i$}
+		\State{$\state \gets \state \concat \st_i$}
+		\State{$\timedState \gets \timedState \concat \ledgerTime$}
+
+		\LineComment{Must not proceed with too many adversarial blocks}
+		\State{$j \gets \max \{\{ \mathtt{windowSize} \} \cup \{k \mathbin| \st_k \in \state \wedge ~\text{proposal of}~ \st_k ~\mathrm{had}~ \mathrm{hFlag} = 1\}\}$}
+
+		\oneLineIf{$|\state| - j \ge \eta$}{\Return \txSeqProposalDefault}
+
+		\If{$|\state| \ge \mathtt{windowSize}$}
+		\State{$\tauLow \gets \timedState[|\state| - \mathtt{windowSize} + 1]$}
+		\Else
+		\State{$\tauLow \gets 0$}
+		\EndIf
+
+		\EndFor
+
+		\LineComment{A sequence of blocks cannot take too much time}
+		\oneLineIf{$\tauLow > 0$ \textbf{and} $\ledgerTime - \tauLow > \mathtt{maxTime_{window}}$}{\Return \txSeqProposalDefault}
+
+		\LineComment{Bootstrapping cannot take too much time}
+		\oneLineIf{$\tauLow = 0$ \textbf{and} $\ledgerTime - \tauLow > 2 \cdot \mathtt{maxTime_{window}}$}{\Return \txSeqProposalDefault}
+
+		\LineComment{Old enough, valid transactions should be included}
+		\oneLineIf{$\mathsf{oldValidTxMissing}$}{\Return \txSeqProposalDefault}
+
+		\State{\Return \txSeqProposal}
+	\end{algorithmic}
+\end{cccAlgorithm}
+
+

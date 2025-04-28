@@ -1,0 +1,115 @@
+\begin{cccFunctionality}
+	{\funcFairLedger}
+	{ledger}
+	{The ledger functionality with parametric extend policy.}
+
+	\textbf{General:}
+	%
+	The functionality is parametrized by four algorithms \textsf{Validate}, \textsf{ExtendPolicy}, \blockify, and \textsf{predict-time}, along with two parameters $\mathtt{windowSize}, \mathtt{Delay}, \revisedText{\mathtt{waitTime}} \in \mathbb{N}$.
+	%
+	The functionality manages variables \state, $\mathtt{NxtBC}$, \buffer, \ledgerTime and \timedState.
+	%
+	Initially, $\state \gets \varepsilon, \mathtt{NxtBC} \gets \varepsilon, \timedState \gets \varepsilon, \buffer \gets \emptyset, \ledgerTime \gets 0$.
+
+	For each party $\party_i \in \partyset$ the functionality maintains a pointer $\pt_i$ (initially set to 1) and a current-state view $\state_i \gets \varepsilon$ (initially set to empty).
+	%
+	The functionality keeps track of the timed honest-input sequence \honestInputSeq (initially $\honestInputSeq \gets \varepsilon$).
+
+	\paragraph{Party management:}
+	%
+	The functionality maintains the set of registered parties \partyset, the (sub-)set of honest parties $\honestPartySet \subseteq \partyset$, and the (sub-set) of de-synchronized honest parties $\partyset_{DS} \subset \honestPartySet$.
+	%
+	The sets \partyset, \honestPartySet, $\partyset_{DS}$ are all initially set to $\emptyset$.
+	%
+	When a new honest party is registered at the ledger, if it is registered with the clock already then it is added to the party sets \honestPartySet and \partyset and the current time of registration is also recorded; if the current time is $\ledgerTime > 0$, it is also added to $\partyset_{DS}$.
+	%
+	Similarly, when a party is deregistered, it is removed from both \partyset (and therefore also from $\partyset_{DS}$ or \honestPartySet).
+	%
+	The ledger maintains the invariant that it is registered (as a functionality) to the clock whenever $\honestPartySet \neq \emptyset$.
+	%
+	A party is considered fully registered if it is registered with the ledger and the clock.
+
+	\paragraph{Upon receiving any input $I$}
+	%
+	from any party or from the adversary, send $(\textsc{clock-read}, \sid_C)$ to \funcClock and upon receiving response $(\textsc{clock-read}, \sid_C , \tau)$ set $\ledgerTime \gets \tau$, and do the following:
+	%
+	\begin{cccEnum}
+		\item Let $\hat{\partyset} \subseteq \partyset_{DS}$ denote the set of de-synchronized honest parties that have been registered (continuously) since time $\tau' < \ledgerTime - \mathtt{Delay}$ (to both ledger and clock).
+		%
+		Set $\partyset_{DS} \gets \partyset_{DS} \backslash \hat{\partyset}$.
+		%
+		On the other hand, for any synchronized party $\party \in \honestPartySet \backslash \partyset_{DS}$, if \party is not registered to the clock, then $\partyset_{DS} \cup \{ \party \}$.
+
+		\item If $I$ was received from an honest party $\party_i \in \partyset$:
+		%
+		\begin{enumerate}[leftmargin=*, nosep]
+			\item Set $\honestInputSeq \gets \honestInputSeq \concat (I, \party_i, \ledgerTime)$;
+
+			\item Compute $\txSeqProposal = (\txSeqProposal_1, \ldots \txSeqProposal_\ell) \gets \mathsf{ExtendPolicy}(\honestInputSeq, \state, \mathtt{NxtBC}, \buffer, \timedState)$ and
+			      %
+			      if $\txSeqProposal \neq \varepsilon$ set $\state \gets \state \concat \blockify(\txSeqProposal_1) \concat \ldots \concat \blockify(\txSeqProposal_\ell)$ and
+			      %
+			      $\timedState \gets \timedState \concat \ledgerTime^\ell$ where $\ledgerTime^\ell = \ledgerTime \concat \ldots \concat \ledgerTime$;
+
+			\item For each $\BTX \in \buffer$: if $\mathsf{Validate}(\BTX, \state, \buffer) = 0$ then delete \BTX from \buffer.
+			      %
+			      Also, reset $\mathtt{NxtBC} \gets \varepsilon$.
+
+			\item If there exists $\party_j \in \honestPartySet \backslash \partyset_{DS}$ such that $|\state| - \mathtt{pt}_j > \mathtt{windowSize}$ or $\mathtt{pt}_j < |\state_j |$, then set $\mathsf{pt}_k \gets |\state|$ for all $\party_k \in \honestPartySet \backslash \partyset_{DS}$.
+		\end{enumerate}
+
+		\item Depending on the input $I$ and the ID of the sender, execute the respective code:
+		%
+		\begin{cccItemize}[nosep]
+			\item \emph{Submitting a transaction:}
+			%
+			If $I = (\textsc{submit}, \sid, \tx)$ and is received from a party $\party \in \partyset$ or from \adv (on behalf of a corrupted party \party) do the following:
+			%
+			\begin{enumerate}[label=(\alph*), leftmargin=*, nosep]
+				\item Choose a unique transaction ID \txid and set $\BTX \gets (\tx, \txid, \ledgerTime, \party)$;
+
+				\item If $\mathsf{Validate}(\BTX, \state, \buffer) = \true$, then $\buffer \gets \buffer \cup \{ \BTX \}$;
+
+				\item \revisedText{Send $(\textsc{submit}, (|\BTX.\tx|, \BTX.\txid, \BTX.\ledgerTime, \BTX.\party))$ to \adv.}
+			\end{enumerate}
+
+			\item \emph{Reading the state:}
+			%
+			If $I = (\textsc{read}, \sid)$ is received from a fully registered party $\party_i \in \partyset$ then set $\state_i \gets \state|_{\min\{\pt_i, |\state|\}}$ and return $(\textsc{read}, \sid, \state_i)$ to the requestor.
+			%
+			If the requestor is \adv then \revisedText{send $(\state, \widehat{\buffer}, \honestInputSeq)$ to \adv where $\widehat{\buffer} \triangleq \{ (|\tx|, \cdot, \cdot, \cdot) \mathbin| \BTX = (\tx, \cdot, \cdot, \cdot) \in \buffer \}$ (cf.~\cref{eq:buffer-fair-ledger}).}
+
+			\item \emph{Maintaining the ledger state:}
+			%
+			If $I = (\textsc{maintain-ledger}, \sid, \mathrm{minerID})$ is received by an honest party $\party_i \in \partyset$ and (after updating \honestInputSeq as above) $\mathsf{predict\text{-}time}(\honestInputSeq) = \hat{\tau} > \ledgerTime$ then send $(\textsc{clock-update}, \sid_C)$ to \funcClock.
+			%
+			Else send $I$ to \adv.
+
+			\item \emph{The adversary proposing the next block:}
+			%
+			If $I = (\textsc{next-block}, \mathrm{hFlag}, (\txid_1, \ldots , \txid_\ell))$ is sent from the adversary, update $\mathtt{NxtBC}$ as follows:
+			%
+			\begin{enumerate}[label=(\alph*), leftmargin=*, nosep]
+				\item Set $\mathrm{listOfTxid} \gets \varepsilon$;
+
+				\item For $i = 1, \ldots , \ell$ do: if there exists $\BTX = (\cdot, \txid, \ledgerTime, \party_i) \in \buffer$ with ID $\txid = \txid_i$ then set $\mathrm{listOfTxid} \gets \mathrm{listOfTxid} \concat \txid_i$;
+
+				\item Finally, set $\mathtt{NxtBC} \gets \mathtt{NxtBC} \concat (\mathrm{hFlag} ,\mathrm{listOfTxid})$ and output $(\textsc{next-block}, \ok)$ to \adv.
+			\end{enumerate}
+
+			\item \emph{The adversary setting state-slackness:}
+			%
+			If $I = (\textsc{set-slack}, (P_{i_1}, \hat{\pt}_{i_1}), \ldots, (P_{i_\ell}, \hat{\pt}_{i_\ell}))$, with $\{P_{i_1}, \ldots, P_{i_\ell}\} \subseteq \honestPartySet \backslash \partyset_{DS}$ is received from the adversary \adv do the following:
+			%
+			\begin{enumerate}[label=(\alph*), leftmargin=*, nosep]
+				\item If for all $j \in [\ell] : |\state| - \hat{\pt}_{i_j} \le 4\mathtt{windowSize}$ and $\hat{\pt}_{i_j} \ge |\state_{i_j}|$, set $\pt_{i_j} \gets \hat{\pt}_{i_j}$ for every $j \in [\ell]$ and return $(\textsc{set-slack}, \ok)$ to \adv;
+
+				\item Otherwise set $\pt_{i_j} \gets |\state|$ for all $j \in [\ell]$.
+			\end{enumerate}
+
+			\item \emph{The adversary setting the state for de-sychronized parties:}
+			%
+			If $I = (\textsc{desync-state}, (\party_{i_1},\allowbreak \state'_{i_1}), \ldots, (\party_{i_\ell}, \state'_{i_\ell}))$, with $\{\party_{i_1}, \ldots, \party_{i_\ell}\} \subseteq \partyset_{DS}$ is received from the adversary \adv, set $\state_{i_j} \gets \state'_{i_j}$ for each $j \in [\ell]$ and return $(\textsc{desync-state}, \ok)$ to \adv.
+		\end{cccItemize}
+	\end{cccEnum}
+\end{cccFunctionality}

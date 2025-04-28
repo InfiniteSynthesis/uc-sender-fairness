@@ -1,0 +1,94 @@
+\section{Ledger Functionality with Parametric Extend Policy}
+\label{sec:ledger-functionality-extend-policy}
+
+In order to capture fairness in transaction serialization, we extend the ledger functionality \funcLedger in~\cite{C:BMTZ17} by enhancing the extend policy with parametric order policy and revising the transaction information leakage behavior (which we denote by \funcFairLedger).
+%
+We highlight our main adaptions in this section.
+
+\paragraph{Parametric extend policy.}
+%
+The ledger in~\cite{C:BMTZ17} is parametrized with an \textsf{ExtendPolicy} algorithm such that, for every new block, the adversary is allowed to propose an arbitrary sequence using an arbitrary subset of the transaction buffer, as long as
+%
+(i) all valid transactions are included timely (liveness);
+%
+(ii) the proposed ledger grows at a relatively steady rate (chain growth);
+%
+and (iii) the fraction of honest blocks in any section of the blockchain is lower-bounded (chain quality).
+%
+This captures exactly the transaction inclusion mechanism in real-world Bitcoin.
+%
+Meanwhile, subject to the designated chain quality parameter, front-running is possible during the ongoing of a sequence of blocks that is at most the same number of the common prefix parameter.
+
+In order to capture order fairness and towards a more modular design of the core ledger extending mechanism, we propose a new \textsf{ExtendPolicy} in~\cref{algorithm:extend-policy} which (i) can be parameterized with different fair-order policies; and (ii) revises the liveness guarantee check (which is necessary since we decouple the consensus and transaction settlement).
+%
+To improve accessibility, we mark in \revisedText{blue} the differences compared with the original \textsf{ExtendPolicy} in~\cite{C:BMTZ17}.
+
+Upon receiving a proposed block from the adversary, \textsf{ExtendPolicy} iterates all transactions; for each transaction \tx, its \emph{order} and validity with respect to the current state and buffer is evaluated.
+%
+If \tx turns out to be a valid transaction and extends the ledger following the fair-order policy, the algorithm goes for the next transaction; otherwise, it aborts and returns default blocks from \textsf{DefaultExtension}.
+%
+The transaction validation procedure follows that in~\cite{C:BMTZ17}.
+%
+Regarding the fair-order examination, we let \textsf{ValidOrder} and \textsf{DefaultExtension} be parameters of \cref{algorithm:extend-policy}.
+%
+\textsf{ValidOrder} takes the target transaction \tx, current ledger state \state and pending transaction buffer \buffer as input and returns whether \tx is a valid extension with respect to \state and \buffer under a designated fair-order policy; \textsf{DefaultExtension} takes the honest input sequence \honestInputSeq, the current ledger state \state and pending transaction buffer \buffer and returns the default block under the designated fair-order policy that ledger \funcFairLedger should specify.
+%
+The \textsf{ValidOrder} algorithm is called for every transaction (Line~\ref*{code:extend-policy-valid-order} in~\cref{algorithm:extend-policy}).
+%
+Different \textsf{ValidOrder} and \textsf{DefaultExtension} algorithms can implement different fair-order policies, and we discuss them in~\cref{sec:extend-policies-with-order-fairness}.
+
+Alongside with the new \textsf{ValidOrder} examination, we revise the transaction liveness check.
+%
+Recall that in~\cite{C:BMTZ17}, once an honest block is proposed, it should include all relatively recent pending transactions in the buffer to avoid the violation of liveness.
+%
+Looking ahead, our protocol employs a blockchain scheme that decouples consensus and transaction inclusion (a similar framework has been used in, e.g.,~\cite{PODC:PasShi17,TCC:FGKR20}), hence the liveness parameter is not exactly the same as \texttt{windowSize} (which indicates the number of blocks that needs to be pruned to achieve a consistent view on the level of blockchains).
+%
+We adopt a new parameter \texttt{waitTime} for transaction liveness, so the old transaction checks only those sent before time $\ledgerTime - \mathtt{waitTime}$.
+%
+Additionally, old transactions will be excluded if they commit to an invalid order with respect to the current ledger.
+%
+See Line~\ref*{code:extend-policy-old-tx-condition} and \ref*{code:extend-policy-old-tx-order} in~\cref{algorithm:extend-policy}.
+
+\input{algorithms/extend-policy}
+
+\paragraph{Transaction leakage after settlement.}
+%
+Recall that while Bitcoin is pseudonymous, all transactions are actually public and transparent (both on-chain and in the mempool).
+%
+The ledger functionality in~\cite{C:BMTZ17} thus leaks all information to the adversary once it receives a transaction.
+%
+This gives the adversary the full power to adaptively issue transactions, even within the same round as the victim ones.
+%
+In order to capture the goal that the adversary cannot finalize a transaction that depends in a meaningful way of any pending transactions (i.e., input causality, cf.~\cite{C:CKPS01}), the ideal functionality must hide the transaction content and metadata before it gets settled.
+
+We make the following two enhancements to \funcFairLedger.
+%
+On one hand, upon a transaction is sent to the functionality, \funcFairLedger book-keeps the transaction as $(\tx, \txid, \ledgerTime, \party)$ where \tx denotes the plain transaction (i.e., content and metadata including issuer's signature), \txid is a unique random tag generated upon receipt, \ledgerTime is the time that this transaction is sent and \party denotes the sender.
+%
+Our new functionality \funcFairLedger immediately leaks transaction length $|\tx|$, identifier \txid, receiving time \ledgerTime and sender \party to the adversary (recall that we assume a network adversary); however, \tx itself remains hidden (note that in~\cite{C:BMTZ17} the entire tuple is leaked immediately).
+%
+On the other hand, upon the adversary requests to read all transactions in the buffer, \funcFairLedger returns (i) the current state \state where all transactions are transparent (indicating that they have been settled in the immutable ledger); and, (ii) transaction buffer \buffer except that for each transaction tuple $(\tx, \cdot, \cdot, \cdot)$ in \buffer, \tx is replaced with its length $|\tx|$ in the response.
+%
+Precisely, upon receiving the \textsc{read} command, the functionality returns $(\state, \widehat{\buffer})$ such that
+%
+\begin{equation} \label{eq:buffer-fair-ledger}
+    \widehat{\buffer} \triangleq \{ (|\tx|, \txid, \tau, \party) \mathbin| \BTX = (\tx, \txid, \tau, \party) \in \buffer \}.
+\end{equation}
+
+In such a way, the ideal world adversary is limited to learn only the ``existence'' of a transaction \tx before its settlement.
+%
+To learn the full information of \tx, the adversary has to either propose \tx in the next block or wait for the default extension policy to handle \tx.
+%
+In other words, the time interval that \funcFairLedger hides the plain transaction is upper-bounded by liveness; but it is up to the ideal world adversary to decide whether to propose \tx earlier and learn its content, or wait for the default extension.
+%
+(Arguably, a good simulator never uses the default extension to learn \tx; details see the protocol analysis.)
+%
+Also, notice that the sender \party leaks information at the network level and is not necessarily linked with the transaction issuer.
+%
+Thus \tx remains completely secret before being committed to the ledger state.
+
+We provide a complete description of our ledger \funcFairLedger.
+%
+For brevity, major revisions compared with~\cite{C:BMTZ17} are marked with \revisedText{blue} text.
+
+\input{functionalities/fair-ledger}
