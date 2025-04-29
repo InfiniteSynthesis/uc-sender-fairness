@@ -1,0 +1,63 @@
+\begin{cccAlgorithm}
+    {\textsf{SenderOrder}}
+    {exact-order}
+    {The \textsf{ValidOrder} predicate and \textsf{DefaultExtension} algorithm for sender fairness.}
+
+    \begin{algorithmWithNumbering}{senderOrderCounter}
+        \Statex{\underline{$\mathsf{ValidOrder}(\tx, \state, \buffer)$}}
+
+        \State{Parse \tx as $(\tx, \txid, \tau, \party)$}
+
+        \LineComment{Extract the most recent transaction time in the ledger state.}
+        \State{$\tau^* \gets \max \{\tau' \mathbin| \BTX = (\tx, \cdot, \tau', \cdot) \wedge \tx \in \state\}$}
+
+        \State{$\vec{\tx} \gets \{\tx \mathbin | \BTX = (\tx, \cdot, \tau', \cdot) \in \buffer \wedge \BTX \not\in \txSeqProposal \wedge \tau^* \le \tau' < \tau \}$}
+
+        \For{$\tx \in \vec{\tx}$}
+        \oneLineIf{$\mathsf{ValidTX}(\tx, \state) = \true$}{\Return \false}
+        \EndFor
+        \State{\Return \true}
+    \end{algorithmWithNumbering}
+
+    \medskip
+
+    \begin{algorithmWithNumbering}{senderOrderCounter}
+        \Statex{\underline{$\mathsf{DefaultExtension}(\honestInputSeq, \state, \mathtt{NxtBC}, \buffer, \timedState)$}}
+
+        \State{$\ledgerTime \gets$ current ledger time (computed from \honestInputSeq)}
+
+        \State{$\txSeqProposalDefault \gets \tx^{\mathrm{base-tx}}_{\mathrm{minerID}}$ of an honest miner}
+
+        \State{\revisedText{Let $\vec{\tx} = \{\tx \mathbin| \BTX = (\tx, \txid, \ledgerTime', \party) \in \buffer \wedge \ledgerTime' < \ledgerTime - \mathtt{waitTime} \}$}}
+
+        \State{Sort $\vec{\tx}$ according to timestamps}
+
+        \State{$\st \gets \blockify(\txSeqProposalDefault)$}
+
+        \Repeat
+
+        \State{Let $\vec{\tx} = (\tx_1, \ldots, \tx_\ell)$ be the current set of (remaining) transactions}
+        \For{$i = 1$ \textbf{to} $\ell$}
+        \If{\revisedText{$\mathsf{ValidTX}(\tx_i, \state \concat \st) = \true$ \textbf{and} $\mathsf{ValidOrder}(\tx_i, \state \concat \st ,\buffer) = \true$}}
+        \State{$\txSeqProposalDefault \gets \txSeqProposalDefault \concat \tx_i$}
+        \State{Remove $\tx_i$ from $\vec{\tx}$}
+        \State{$\st \gets \blockify(\txSeqProposal)$}
+        \EndIf
+        \EndFor
+
+        \Until{\txSeqProposalDefault does not increase any more}
+
+        \oneLineIf{$|\state| + 1 \ge \mathtt{windowSize}$}{$\tauLow \gets \timedState[|\state| - \mathtt{windowSize} + 2]$ \textbf{else} set $\tauLow \gets 0$}
+
+        \State{$c \gets 1$}
+        \While{$\ledgerTime - \tauLow > \mathtt{maxTime_{window}}$}
+        \State{Set $\txSeqProposal_c \gets \tx^{\mathrm{base-tx}}_{\mathrm{minerID}}$ of an honest miner}
+        \State{$\txSeqProposalDefault \gets \txSeqProposalDefault \concat \txSeqProposal_c$}
+        \State{$c \gets c + 1$}
+
+        \oneLineIf{$|\state| + c \ge \mathtt{windowSize}$}{$\tauLow \gets \timedState[|\state| - \mathtt{windowSize} + c + 1]$ \textbf{else} $\tauLow \gets 1$}
+        \EndWhile
+
+        \State{\Return \txSeqProposalDefault}
+    \end{algorithmWithNumbering}
+\end{cccAlgorithm}

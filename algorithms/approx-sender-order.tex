@@ -1,0 +1,20 @@
+\begin{cccAlgorithm}
+    {$\delta$-\textsf{ApproxSenderOrder}}
+    {delta-approximate-order}
+    {The \textsf{ValidOrder} predicate for approximate sender fairness.}
+
+    \begin{algorithmic}[1]
+        \Statex{\underline{$\mathsf{ValidOrder}(\tx, \txSeqProposal, \buffer)$}}
+        \State{Parse \tx as $(\tx, \txid, \tau, \party)$}
+
+        \LineComment{Extract the most recent transaction time in the ledger state.}
+        \State{$\tau^* \gets \max \{\tau' \mathbin| \BTX = (\tx, \cdot, \tau', \cdot) \wedge \tx \in \state\}$}
+
+        \State{$\vec{\tx} \gets \{\BTX = (\cdot, \cdot, \tau', \cdot) \mathbin| \BTX \in \buffer \wedge \BTX \not\in \txSeqProposal \wedge \tau^* \le \tau' < \tau - \delta\}$}
+
+        \For{$\tx \in \vec{\tx}$}
+        \oneLineIf{$\mathsf{ValidTX}(\tx, \state) = \true$}{\Return \false}
+        \EndFor
+        \State{\Return \true}
+    \end{algorithmic}
+\end{cccAlgorithm}

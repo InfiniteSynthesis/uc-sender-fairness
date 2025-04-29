@@ -1,0 +1,28 @@
+\subsection{Sender Order Fairness}
+\label{subsec:sender-order-fairness}
+
+Sender-side order fairness captures the natural desire that a ledger \funcFairLedger serializes transactions based on the time that they are released by their senders.
+%
+This order is well-defined by looking at the \funcFairLedger transaction buffer and order transactions based on their arrival time recorded.
+%
+Hence, every time the adversary tries to propose a transaction \tx that is sent at time $\tau$ (i.e., \funcFairLedger receives \tx and records $(\tx, \txid, \tau, \party)$), our \textsf{ValidOrder} algorithm in \textsf{SenderOrder}  checks whether there exists valid transactions in \buffer with time $\tau' < \tau$.
+%
+If such transaction exists, the proposed order is invalid and this will force the $\mathsf{ExtendPolicy}$ to return a default extension.
+
+Regarding the \textsf{DefaultExtension} mechanism, since the original construction in~\cite{C:BMTZ17} has been proposing a default order that follows the one stored in the ledger, we follow that construction with one minor modification.
+%
+Precisely, in~\cite{C:BMTZ17} a default extension will blockify all pending transactions in the buffer, while ours only include those that are about to violate liveness --- again this adaption follows our blockchain scheme that decouples the consensus and transaction inclusion.
+%
+We note that this adaption is insignificant, as a good simulator shall never allow the ledger to trigger this subroutine.
+
+\input{algorithms/sender-order}
+
+The sender fairness \textsf{SenderOrder} is our desideratum; unfortunately, \textsf{SenderOrder} is impossible to realize, even in the synchronous network (i.e., $\delay = 1$ in $\funcDiffuse^\delay$).
+%
+The high level intuition is that transactions issued by corrupted parties can always reach honest parties in two consecutive rounds by sending to one honest party \party at round $r$ and let \party diffuse it to others at round $r + 1$, where in the case of honest party issuing transactions, the sender can book-keep their receiving time to the next round.
+%
+The fact that the adversary \adv can exploit this one round advantage allows him to make the following two executions identical: in the first execution, \adv sends a transaction \tx at round $r$ to only one honest party and in the second execution he sends \tx to all honest parties at round $r + 1$.
+%
+Later, in the second execution \adv lets one corrupted party behave like it receive and diffuses the message at round $r$.
+%
+In the first execution, \tx in \funcFairLedger owns timestamp $r$ while in the second execution it owns timestamp $r + 1$, however these two executions are indistinguishable.

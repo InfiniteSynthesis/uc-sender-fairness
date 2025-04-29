@@ -1,0 +1,17 @@
+\section{Extend Policies with Sender Order Fairness}
+\label{sec:extend-policies-with-order-fairness}
+
+The parametric \textsf{ExtendPolicy} introduced in~\cref{sec:ledger-functionality-extend-policy} allows us to insert a customized fair-order policy into \funcFairLedger such that its output ledger state should follow a legitimate transaction sequence under the designated policy.
+%
+In this section we consider two policy instances\footnote{Capturing receiver order fairness definitions, e.g., \cite{C:KZGJ20,FC:CMSZ22}, can be an interesting direction for future work.}.
+%
+The first one is the most natural sender-side order fairness \textsf{SenderOrder} where transactions should be serialized by the order they are received by the ledger \funcFairLedger.
+%
+The second policy is a (necessary) relaxation on sender order fairness (namely, $\delta$-\textsf{ApproxSenderOrder}) which asks for the order of two transactions if they reach \funcFairLedger at times that are $\delta$ apart from each other.
+%
+We discuss impossibility results with respect to both policies in the same setting as Bitcoin (i.e., with global clock and \delay-bounded delay diffusion network).
+%
+Further, we show that the unfairness stemmed from network delay is impossible to circumvent --- we prove that even if we employ additional powerful setups, still no $\delta$-\textsf{ApproxSenderOrder} can be achieved for any $\delay < \delta$.
+
+\input{content/sender-order-fairness/sender-order}
+\input{content/sender-order-fairness/approx-sender-order}

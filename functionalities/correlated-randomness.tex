@@ -1,0 +1,19 @@
+\begin{cccFunctionality}
+    {$\mathcal{G}_{\mathsf{CR}}$}
+    {correlated-randomness}
+	{Correlated randomness.}
+
+    This functionality is parameterized by a distribution $\mathcal{D}$.
+
+	\begin{cccItemize}[noitemsep]
+		\item Upon receiving $\mathsf{eid} = (\mu, (\sid, \pid))$ from \party:
+		%
+		\begin{cccEnum}[nosep]
+			\item If $\mu \neq \mathsf{code}$ ignore this message.
+
+			\item If there is no tuple of the form $(\sid, \ldots)$, generate $(s_1, \ldots, s_n) \gets \mathcal{D}(1^\lambda)$ and store $(\sid, s_1, \ldots, s_n)$. Otherwise, retrieve $(\sid, s_1, \ldots, s_n)$.
+
+			\item Send Send $(\sid, s_i)$ to $\party_i$.
+		\end{cccEnum}
+	\end{cccItemize}
+\end{cccFunctionality}
