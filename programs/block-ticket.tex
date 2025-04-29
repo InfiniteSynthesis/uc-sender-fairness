@@ -1,0 +1,13 @@
+\begin{cccProgram}
+    {$\mathsf{BlockTicket}(\fPRF)$}
+    {block-ticket}
+	{The enclave program for ticket generation.}
+
+    \begin{algorithmic}[1]
+        \Statex{\underline{$\mathsf{TicketGen}(h)$}}
+        
+        \oneLineIf{$\mathsf{key}$ is not stored}{generate $\mathsf{key} \overset{\$}{\gets} \{0, 1\}^\kappa$ and store $\mathsf{key}$.}
+        
+        \State{Set $\ticket \gets \fPRF(\mathsf{key}, h)$ and \Return $(h, \ticket)$.}
+    \end{algorithmic}
+\end{cccProgram}

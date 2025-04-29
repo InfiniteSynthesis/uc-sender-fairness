@@ -1,0 +1,36 @@
+\subsection{Further Discussions}
+\label{subsec:further-discussions}
+
+In this section we discuss how our protocol can be naturally translated to a Nakamoto-style Proof-of-Stake protocol, and how it can operate with dynamic participation.
+
+\paragraph{Proof-of-Stake instantiation.}
+%
+Our protocol turns out to have a natural adaption to the PoS setting with a few minor adaptions.
+%
+Note that the transaction encryption mechanism that we employ are blockchain-agnostic hence no additional modification is required.
+%
+We hence focus on the blockchain part.
+
+On one hand, we shall instantiate the \twoforone PoW blockchain using PoS.
+%
+This translation is immediate: the \twoforone PoW can be replace by using two independent VRF evaluations, one for extending the PoS chain and the other for generating profile blocks.
+%
+This replacement is provably equivalent and has been seen wide usage (see, e.g.,~\cite{TCC:FGKR20} for more discussion).
+%
+On the other hand, in PoS the simulation for chain extending is ``for free'', and since the enclaves are clock-oblivious they should not decrypt transactions using the ``progression'' on a PoS chain.
+%
+To address this problem, we point to the ``density''-based chain selection rule in Ouroboros Genesis \cite{CCS:BGKRZ18}, where the selection of two chains with long forks is based on selecting the denser chain after the fork, capturing the fact that honest parties win more slots than the adversary.
+%
+A similar approach can be applied in the enclave decryption program: in order to decrypt a transaction \tx, a chain extending from the state bound with \tx should be provided, with sufficiently many blocks in each interval (i.e., the chain should be dense), until some pre-defined time length.
+
+\paragraph{Dynamic participation.}
+%
+Our protocol can operate with dynamic participation, with certain modifications that we provide a high-level intuition.
+%
+The \twoforone PoW blockchain that we use can go with fluctuating computational power (the \twoforone mining with difficulty adjustment has been used and proved secure in, e.g.,~\cite{EC:KiaLeoShe24}).
+%
+Further, the enclave program can be modified to decrypt transactions if certain amount of block difficulty has been accumulated since the state that transaction bound to.
+%
+The main challenge is when maintainers come and go, the set of enclave public keys that clients are supposed to use should be updated periodically.
+%
+Notice that in \cite{EC:KiaLeoShe24} the mining difficulty is adjusted by epochs, hence we could employ an additional public key registration phase for each epoch, and based on the block that a transaction is bound with, it selects the appropriate set of keys to apply the ticket selection --- and of course, this requires a more refined parametrization.

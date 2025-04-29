@@ -1,0 +1,74 @@
+\subsection{Blind Transaction Serialization}
+\label{subsec:blind-transaction-serialization}
+
+In this section we present our PoW blockchain framework and show how a virtual ledger \ledger can be built on top of the chain \chain.
+%
+In a nutshell, the blockchain \chain can be seen as derived from the Nakamoto-style PoW chain by additionally binding the mining procedure of the blocks that forms the chain \chain and a new type of block called ``profile blocks'', using \twoforone (pronounced ``two-for-one'') PoW.
+%
+Note that the \twoforone PoW blockchain has been proposed in~\cite{EC:GarKiaLeo15}.
+%
+We borrow their basic constructions but adapt it specifically to reach agreement over the timestamp of each transaction.
+%
+The virtual ledger \ledger is built by serializing all transactions based on their aggregated timestamp.
+
+In \twoforone PoW, a hash function output $u$ is checked twice for $u$ and its reversed bit-string \stringRev{u}.
+%
+If $u< T$, a block that extends the chain \chain is produced; and if $\stringRev{u} < T$, a new profile block \PB is mined (which we will detail soon).
+%
+In such a way, the mining procedure of the chain \chain and profile blocks are ``bound'' together and the adversary cannot gain advantage on either type of blocks by dropping from mining the other.
+
+The blockchain \chain in \protocFairLedger is a sequence of blocks connected by the hash reference to the previous block, and all validation and chain-selection algorithms follow the longest-chain rule.
+%
+The only difference between our chain \chain in \protocFairLedger and that in, e.g.,  Bitcoin, is that blocks in \chain does not include transactions ``directly''.
+%
+Instead, they only include valid profile blocks and valid enclave public keys (also, valid transaction decryption signed by the enclave).
+%
+As for the profile blocks, they share the same block head structure with on-chain blocks; further, for each \PB, its content is a transaction list of pair $(\txTag, t)$ where \txTag is the transaction identifier (hash of the tuple of encrypted transaction, NIZK proof and block ticket $(ct, \pi, \ticket)$) and $t$ is its local receiving time.
+
+When a maintainer \party receives a transaction in the form of $(ct, \pi, \ticket)$, it first extracts the block hash $h$ associated with this transaction.
+%
+If $h$ is not on \party's local chain, the transaction gets rejected.
+%
+Further, if the proof $\pi$ fails to verify, or it contains a state $st$ does not match $h$, or $ct$ is encrypted from the wrong set of enclave public keys associated with block ticket \ticket, \party rejects this transaction either.
+%
+When all these verification pass, \party bookkeeps the current time $r$ with this transaction in its buffer as $((ct, \pi, \ticket), r)$
+
+\paragraph{Transaction timestamping.}
+%
+To facilitate transaction timestamping via profile blocks, we employ two additional parameters for validating profile blocks --- the recency parameter $R$ which is used to guarantee the freshness of profile blocks and the profile window length parameter \PBWindowLen.
+%
+Specifically, a profile block \PB should ``attach'' to a valid block \block in the settled part of the blockchain (by including \block's block hash in its header), as the freshness proof that \PB is not mined too early ago.
+%
+Meanwhile, the blockchain \chain should reject stale profile blocks (to prevent the adversary from withholding them and releasing in the very future).
+%
+Let $\ell$ denote the height of block \block that \PB attaches to.
+%
+\PB is considered as a valid profile block only when \PB is included in a block with height less than $\ell + R$.
+
+We detail the transaction settlement and timestamping scheme.
+%
+Consider a transaction \tx (at this stage miners only know its unique identifier \txTag) and \block the first block that contains a profile block \PB with entry $(\txTag, \cdot)$.
+%
+Let $\ell$ denote the block height of \block.
+%
+The timestamp of \tx (or, its position in the final ledger) is computed by calculating the median timestamps of \txTag from all profile blocks included in blocks with height at most $\ell + \PBWindowLen$.
+%
+Formally,
+%
+\[ \timestamp{\txTag} \triangleq \med \{ t \mathbin|  (\txTag, t) \in \PB \in B \wedge \ell \le \mathsf{height}(B) < \ell + \PBWindowLen\}. \]
+%
+Note that if a profile block in the \PBWindowLen-block window does not report an entry $(\txTag, \cdot)$, it is counted as reporting $(\txTag, +\infty)$ (i.e., the miner had never received \txTag thus cannot decrypt it).
+%
+In other words, in order for a transaction \tx with identifier \txTag to be included in the ledger \ledger, the majority of these profile blocks should report an entry $(\txTag, \cdot)$, otherwise the computed timestamp is $\infty$ meaning \txTag fails to settle into the ledger\footnote{Under this majority rule, even if the adversary with minority of computational power completely drops from mining a transaction \txTag, honest parties can still settle \txTag on their own with a good timestamp.}.
+
+\paragraph{Security guarantees.}
+%
+Looking ahead, in our analysis we show that our blockchain \chain provides all security guarantees as the conventional ones, with additional good properties on the profile blocks.
+%
+In particular, for any transaction \tx and its associated \PBWindowLen-block window, at least half of the profile blocks in this window are produced by honest parties.
+%
+Given the overwhelming probability on winning the majority of profile blocks, the ledger built on top of \chain is a consistent and live one with two additional properties --- sender fairness and input causality.
+%
+In terms of sender fairness, for each transaction \tx that enters the network at round $r$, eventually our ledger will finalize a timestamp $t$ such that $r \le t \le r + \delay$ for \tx.
+%
+Further, regarding input causality, since no party except the transaction issuer can learn (any information about) \tx before the chain extends for at least $\Lambda > \PBWindowLen$ blocks, the adversary can only issue transactions after \tx has got finalized.

@@ -1,0 +1,28 @@
+\begin{cccFunctionality}
+	{\funcEnclave}
+	{enclave}
+	{The trusted execution environment.}
+
+	The functionality is parameterized with a signature scheme $\SIG = (\KeyGen, \Sign, \Verify)$ and a registered party set \partyset.
+	%
+	On initialization, $(\mathsf{msk}, \mathsf{mvk}) \gets \SIG.\KeyGen(1^\kappa)$ and $T \gets \emptyset$.
+
+	\begin{cccItemize}[noitemsep]
+		\item \textbf{Master key query.} Upon receiving $(\textsc{get-vk})$ from \party, send $(\textsc{get-vk}, \mathsf{mvk})$ to \party.
+
+		\item \textbf{Install an enclave.} Upon receiving $(\textsc{install}, idx, \mathsf{prog})$ from some $\party \in \partyset$:
+		%
+		\begin{cccEnum}[nosep]
+			\item If \party is honest, assert $idx = sid$.
+			\item Generate nonce $eid \in \{0, 1\}^\kappa$, store $T[eid, \party] = (idx, \mathsf{prog}, \vec{0})$, send $eid$ to \party.
+		\end{cccEnum}
+
+		\item \textbf{Resume an enclave.} Upon receiving $(\textsc{resume}, eid, \mathsf{inp})$ from some $\party \in \partyset$:
+		%
+		\begin{cccEnum}[nosep]
+			\item Let $(idx, \mathsf{prog}, \mathsf{mem}) = T[eid, \party]$, abort if not found.
+			\item Let $(\mathsf{outp, mem}) = \mathsf{prog}(\mathsf{inp}, \mathsf{mem})$, update $T[eid, \party] = (idx, \mathsf{prog}, \mathsf{mem})$.
+			\item Let $\sigma = \SIG.\Sign(\mathsf{msk}, idx, eid, \mathsf{prog}, \mathsf{outp})$, and send $(\mathsf{outp}, \sigma)$ to \party.
+		\end{cccEnum}
+	\end{cccItemize}
+\end{cccFunctionality}

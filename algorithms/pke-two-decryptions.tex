@@ -1,0 +1,60 @@
+\begin{cccAlgorithm}
+    {$\PKE(\F_{\mathsf{owf}}, \funcGrpoRO)$}
+    {pke}
+    {Public-key encryption with two decryption modes.}
+
+	Let $\F_{\mathsf{owf}} = \{ \mathsf{f}_i : \mathcal{D}_i \rightarrow \mathcal{C}_i\}_{i \in I}$ be a collection of one-way trapdoor functions, where $I$ and all $\mathcal{D}_i, \mathcal{C}_i$ have cardinality at least $2^\kappa$.
+	%
+	Let $\mathsf{f}\inv_i : \mathcal{C}_i \rightarrow \mathcal{D}_i$ denote the trapdoor function with respect to $\mathsf{f}_i$, and $\mathsf{b}_i: \mathcal{D}_i \rightarrow \{0, 1\}$ denote the hardcore predicate of $\mathsf{f}_i$.
+
+	\medskip
+
+	\begin{minipage}[t]{.49\textwidth}
+		\begin{algorithmWithNumbering}{PKEcounter}
+			\Statex{\underline{$\KeyGen(1^\kappa)$}}
+			\State{Sample $i \overset{\$}{\gets} I$.}
+			\State{Set $\mathsf{pk} \gets (\mathsf{f}_i, \mathsf{b}_i)$ and $\mathsf{sk} \gets (\mathsf{f}_i, \mathsf{f}\inv_i, \mathsf{b}_i)$.}
+			\State{\Return $(\mathsf{pk}, \mathsf{sk})$.}
+		\end{algorithmWithNumbering}
+
+		\medskip
+
+		\begin{algorithmWithNumbering}{PKEcounter}
+			\Statex{\underline{$\Enc(\mathsf{pk}, m)$}}
+			\State{Parse $\mathsf{pk}$ as $(\mathsf{f}, \mathsf{b})$ and $m$ as $m_1, \ldots, m_k$.}
+			\For{$i$ \textbf{from} $1$ \textbf{to} $k$}
+			\State{Set $x_i \overset{\$}{\gets} \mathcal{D}$}
+			\State{Set $ct_i \gets \mathsf{f}(x_i) \concat (\mathsf{b}(x_i) \oplus m_i)$}
+			\EndFor
+			\State{Set $ct \gets ct_1, \ldots, ct_k$ and \Return $ct$.}
+		\end{algorithmWithNumbering}
+	\end{minipage}
+	%
+	\begin{minipage}[t]{.49\textwidth}
+		\begin{algorithmWithNumbering}{PKEcounter}
+			\Statex{\underline{$\Dec(ct)$}}
+			\State{Parse $\mathsf{sk}$ as $(\mathsf{f}_i, \mathsf{f}\inv_i, \mathsf{b}_i)$ and $ct$ as $ct_1, \ldots, ct_k$.}
+
+			\For{$i$ \textbf{from} $1$ \textbf{to} $k$}
+			\State{Parse $ct_i$ as $ct'_i \concat b'_i$}
+			\State{Compute $x'_i \gets \mathsf{f}\inv_i(ct'_i)$}
+			\State{Set $m'_i \gets \mathsf{b}(x'_i) \oplus b'_i$}
+			\EndFor
+			\State{Set $m' \gets m'_1, \ldots, m'_k$ and \Return $m'$.}
+		\end{algorithmWithNumbering}
+
+		\medskip
+
+		\begin{algorithmWithNumbering}{PKEcounter}
+			\Statex{\underline{$\Dec^*(ct)$}}
+			\State{Parse $\mathsf{sk}$ as $(\mathsf{f}_i, \mathsf{f}\inv_i, \mathsf{b}_i)$ and $ct$ as $ct_1, \ldots, ct_k$.}
+	
+			\For{$i$ \textbf{from} $1$ \textbf{to} $k$}
+			\State{Parse $ct_i$ as $ct'_i \concat b'_i$}
+			\State{Compute $x'_i \gets \mathsf{f}\inv_i(ct'_i)$}
+			\State{Set $m'_i \gets \funcGrpoRO(x'_i) \oplus b'_i$}
+			\EndFor
+			\State{Set $m' \gets m'_1, \ldots, m'_k$ and \Return $m'$.}
+		\end{algorithmWithNumbering}
+	\end{minipage}
+\end{cccAlgorithm}

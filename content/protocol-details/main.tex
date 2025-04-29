@@ -1,0 +1,15 @@
+\section{Protocol Details}
+\label{sec:protocol-details}
+
+We describe our protocol \protocFairLedger in this section.
+%
+The technical roadmap mainly consists two parts --- transaction encryption and decryption using enclaves (in~\cref{subsec:tx-encryption-trusted-hardware}) and encrypted-transaction serialization (in~\cref{subsec:blind-transaction-serialization}).
+%
+For the ease of presentation, we describe our protocol in the PoW and static setting (where the computational power is fixed yet known), we discuss how our protocol can be translated to different settings (PoS and dynamic participation) in~\cref{subsec:further-discussions}.
+%
+A full code specification of our protocol is presented in~\cref{subsec:protocol-desc}.
+
+\input{content/protocol-details/transaction-encryption}
+\input{content/protocol-details/blind-transaction-serialization}
+\input{content/protocol-details/further-discussions}
+\input{content/protocol-details/protocol-desc}

@@ -1,0 +1,241 @@
+\subsection{Transaction Encryption from Trusted Hardware}
+\label{subsec:tx-encryption-trusted-hardware}
+
+Our protocol follows the classical setting of state machine replication, where two types of parties --- maintainers (miners/validators) and clients --- are considered as protocol participants.
+%
+We assume that all protocol maintainers are equipped with their own trusted hardware\footnote{Note that owning an enclave has no implication on the maintainer's computational power. Our protocol works as long as the majority of the computational power is honest and a constant fraction of the enclaves are controlled by honest maintainers.}.
+%
+In contrary, a client, who sends transactions to the maintainers to use the ledger, is not equipped with an enclave.
+
+\paragraph{The trusted hardware functionality \funcEnclave.}
+%
+Following the model and treatment by Pass \textit{et al.} \cite{EC:PasShiTra17}, we capture the maintainers' enclaves as a shared setup \funcEnclave.
+%
+This enclave functionality \funcEnclave is parameterized with a signature scheme \SIG and a registered set of parties \partyset.
+%
+Upon initialization, a master signing/verification key pair $(\mathsf{msk}, \mathsf{mvk})$ is generated, and parties can query the verification key via the \textsc{get-vk} interface (i.e., it is assumed that in the real world such master verification key is securely distributed).
+
+\funcEnclave has two ``local'' interfaces \textsc{install} and \textsc{resume}, and maintains a table $T$ to record the installed program and their associated parties and internal states.
+%
+Specifically, every registered party can install a program that can later be resumed by herself.
+%
+Each program has its own memory which can only be reached and modified by the program itself.
+%
+After resuming a program, the enclave signs the output and the executed program (with session id) using the master signing key $\mathsf{msk}$; later, any party can verify the output by using the master verification key queried from \funcEnclave.
+
+\input{functionalities/enclave}
+
+\paragraph{Transaction encryption scheme.}
+%
+We detail the code that \funcEnclave is expected to execute in \textsf{TxDec} (\cref{program:tx-decryption}).
+%
+This program is parameterized with a public key encryption scheme \PKE and $\Lambda \in \mathbb{N}^+$ which indicates the time interval for hiding the transaction information and is counted by the number of blocks.
+%
+\textsf{TxDec} has two interfaces, both can be executed for multiple times.
+%
+The first interface \KeyGen returns the public key \pk in storage.
+%
+When called for the first time, it runs the key generation algorithm of \PKE and stores the key pair $(\pk, \sk)$.
+%
+I.e., for each session, one enclave can only hold one public key pair.
+%
+The second interface \Dec, taking input a ciphertext $ct$ and a chain \chain, decrypts $ct$ to a plain transaction \tx when all the following conditions are satisfied: (i) $ct$ successfully decrypts to $\tx \concat h$ where $h$ is a valid block state in \chain; and (ii) the length of \chain, starting from the block with hash $h$ has progressed for at least $\Lambda$ blocks.
+
+Importantly, in \Dec there is a backdoor that can be triggered only when the decrypted transaction is an \emph{all-zero} string.
+%
+This backdoor, when triggered, re-decrypts the ciphertext using an alternate decryption algorithm $\Dec^*$ (which we detail very soon below).
+%
+Looking ahead, this backdoor enables the simulator to equivocate fake transactions, as $\Dec^*$ allows for the adversary to program the random oracle and decrypt $ct$ to an arbitrary string he chooses.
+%
+Note that while every party can exploit this backdoor and equivocate her transaction, this is indeed harmless in the real world, because in order for a transaction to be considered legitimate, it should be proved by NIZKPoK as a valid transaction; though, an all-zero string can never be proved.
+%
+In the ideal world, the simulator can generate a fake NIZK proof by hiding the information that random oracle is programmed from the black-box adversary, thus convincing him that an all-zero string is a valid transaction.
+
+\input{programs/tx-dec}
+
+Next we introduce the public-key encryption scheme \PKE to be used in the $\mathsf{TxDec}$ program, consisting of four algorithms \KeyGen, \Enc, \Dec and $\Dec^*$.
+%
+It is parameterized with a collection of one-way trapdoor functions and the restricted programmable and observable global random oracle \funcGrpoRO introduced by Camenish \textit{et al.} \cite{EC:CDGLN18}.
+%
+Specifically, a trapdoor one-way function in $\F_{\mathsf{owf}}$ consists of three functions $\mathsf{f}, \mathsf{f}\inv$ and $\mathsf{b}$ which is the hardcore predicate of $\mathsf{f}$.
+
+\begin{cccItemize}[noitemsep]
+	\item The key generation \KeyGen algorithm randomly selects a trapdoor one-way function from $\F_{\mathsf{owf}}$, and returns $(\mathsf{f}, \mathsf{b})$ as the public key and $(\mathsf{f}, \mathsf{f}\inv, \mathsf{b})$ as the secret key.
+
+	\item The encryption algorithm \Enc takes a $k$-bit message as input.
+	      %
+	      For the $i$-th bit, it samples a random element $x_i$ in the input domain of $\mathsf{f}$ and computes ciphertext $ct_i$ by concatenating $\mathsf{f}(x_i)$ and $\mathsf{b}(x_i) \oplus m_i$.
+	      %
+	      After computing all $ct_i$ it outputs the ciphertext $ct = ct_1, \ldots, ct_k$.
+
+	\item The decryption algorithm \Dec to compute a $k$-bit plaintext works as follows.
+	      %
+	      For the $i$-th bit and its corresponding ciphertext piece $ct_i$, $m_i$ is computed by first extracting $x_i = \mathsf{f}\inv(ct'_i)$ ($ct'_i$ denotes all but the last bit), and then $\mathsf{b}(x_i)$ is XORed with $b'_i$ which is the last bit of $ct_i$ to get $m'_i$.
+	      %
+	      The plaintext is decrypted by concatenating all $m'_i$.
+
+	\item The alternate decryption algorithm $\Dec^*$ works exactly the same as \Dec, except that it replaces the computation of hardcore bit $\mathsf{b}(x_i)$ with the random oracle query, and the response is XORed with $b'_i$ (where last bit is used as result).
+\end{cccItemize}
+
+\input{algorithms/pke-two-decryptions}
+
+We note that the first three algorithms $(\KeyGen, \Enc, \Dec)$ in \PKE has actually instantiated a CPA-secure public-key encryption scheme.
+%
+Nonetheless, the subtlety of using \PKE in our protocol is that the secret key is stored in the enclave, and the simulator cannot control the parameter that the black-box adversary would like to query \funcEnclave.
+%
+Hence, equivocation in the ideal world should happen in a delicate fashion --- by exploiting the last algorithm $\Dec^*$, it provides a simple way for equivocating dummy ciphertexts without letting the enclave to directly interact with the simulator.
+
+\begin{remark}
+	The \PKE scheme can also be instantiated more efficiently using one-way trapdoor permutation.
+	%
+	In particular, we can sample $n$ hard-core bits from just one element $x$ of the function domain by computing $\mathsf{b}(x) \concat \mathsf{b}(\mathsf{f(x)}) \concat \dots \concat \mathsf{b}(\mathsf{f}^{n-1}(x))$~\cite{C:KatOst04}.
+\end{remark}
+
+Looking ahead, in the ideal world, the simulator can equivocate honest transaction by using the fact that only the senders (which are now dummy party) are allowed to equivocate their transactions and all other parties cannot distinguish whether a response $(\tx, ct)$ from \funcEnclave is decrypted by using \Dec or $\Dec^\ast$.
+
+\begin{lemma} \label{lemma:pke-indistinguishability}
+	No PPT distinguisher $D$, after observing polynomially many $(m, ct)$, can tell whether $m$ is decrypted from $ct$ by using $\PKE.\Dec$ or $\PKE.\Dec^*$ with non-negligible probability.
+\end{lemma}
+
+\begin{proof}[Proof (Sketch)]
+	To prove the lemma we show that giving only the ciphertext and its decryption (we consider one bit message),
+	%
+	\begin{align*}
+		| \Pr_{b \gets \{0, 1\}} & [\adv(\Enc(b), \Dec(\Enc(b))) = 1] \\&- \Pr_{b \gets \{0, 1\}}[ \adv(\Enc(b), \Dec^\ast(\Enc(b))) = 1] | < \negl(\kappa).
+	\end{align*}
+
+	We first consider a new distinguisher $D_1$ trying to tell whether a plaintext is decrypted using $\PKE.\Dec$ or $\PKE.\Dec'$ where in $\PKE.\Dec'$, the challenger returns decryption computed by randomly sample a bit and XOR it with the last bit of $\Enc(b)$ (and he remembers this bit for later queries).
+	%
+	We show that $D_1$ cannot distinguish with non-negligible probability, by showing a reduction to the security game of the hardcore bit.
+	%
+	Roughly speaking, the adversary in the hardcore bit game runs $D_1$; if $D_1$ decides on $\PKE.\Dec$, then the adversary picks one $(m, ct)$ outputs $m$ XOR the last bit of $c$.
+	%
+	If $D_1$ distinguishes with non-negligible probability, then the adversary finds $\mathsf{b}(x)$ of $\mathsf{f}(x)$ with probability non-negligibly more than one half, contradicting the security of hard-core bit.
+
+	We consider the next distinguisher $D_2$ trying to tell whether a plaintext is decrypted using $\PKE.\Dec^\ast$ or $\PKE.\Dec'$.
+	%
+	Again the advantage is negligible because when $D_2$ is given a ciphertext $ct = y \concat b$, he cannot check whether the point $\mathsf{f}\inv(y)$ is programmed in \funcGrpoRO.
+	%
+	Otherwise, a reduction to the security of one-way function can be made where the distinguisher of one-way function can invert and find pre-image with non-negligible probability.
+	%
+	By combining these two we conclude the proof.
+\end{proof}
+
+\paragraph{Enclave public-key selection.}
+%
+Since all maintainers are equipped with trusted hardware and each holds a public key, in the sense of communication complexity it is infeasible for a client to encrypt transactions to all the enclaves.
+%
+To reduce the size of an encrypted transaction, the clients should pick a small subset of all public keys and only encrypt to these specific enclaves.
+
+Arguably, as long as the client sends an encrypted transaction \tx to at least one honest maintainer, it guarantees the correct and timely decryption of \tx.
+%
+Nonetheless, it is a non-trivial task to design a key subset selection scheme and the na\"ive solution to let clients pick public keys by themselves does not work.
+%
+The reason is that when a transaction issuer takes full control over selecting public keys to encrypt to, the adversary can collude with her and select only the public keys of enclaves that are controlled by the adversary.
+%
+Especially, the adversary can create different transactions and release them simultaneously to the network; later, he selectively opens one of them that profits him the most\footnote{This is also known as the selective opening problem, which is a major issue when using commitment to hide transaction contents. While this problem can be partially mitigated by employing a penalty scheme, under certain MEV circumstances the revenue of selective opening can be much higher than the penalty.}.
+
+To address this dilemma between the size of encrypted transactions and the security against selective decryption, we propose a new random subset selection scheme using \funcEnclave.
+%
+Specifically, protocol maintainers run a program $\mathsf{BlockTicket}$ parameterized with a pseudorandom function \fPRF.
+%
+This program has only one interface which takes a $\kappa$-bit string $h$ as input.
+%
+Upon queried, it returns $\fPRF(\mathsf{key}, h)$ where $\mathsf{key}$ is a stored PRF key (which is sampled uniformly upon initialization).
+%
+For every maintainer, once they receive a valid block \block with hash $h$, they generate a ticket $(h, \ticket)$ and diffuse it to the network.
+
+\input{programs/block-ticket}
+
+We then consider a function $f_{\mathsf{select}}(\mathcal{S}, m, \ticket)$ which, taking a set $\mathcal{S}$, a threshold $m \in \mathbb{N}^+$ and $\ticket \in \{0, 1\}^\kappa$ as parameters, outputs an element in $\mathcal{S}$.
+%
+Formally, let $\binom{\mathcal{S}}{m}$ denote the the (ordered) set of all $m$-combinations of $\mathcal{S}$ (when $|\mathcal{S}| < m$, $f_{\mathsf{select}} $ returns $\mathcal{S}$ directly), we define the selection function as
+%
+\begin{equation*}
+	f_{\mathsf{select}} = \binom{\mathcal{S}}{m} \bigg[\ticket \mod \Big|\binom{\mathcal{S}}{m} \Big| \bigg].
+\end{equation*}
+
+Looking ahead, when a client is to issue a transaction \tx, she picks a block hash $h$ on (the settled part of) her local chain \chainLocal and encrypts \tx concatenated with $h$.
+%
+Then, she selects a ticket $(h, \ticket)$ (from the set of all tickets $(h, \cdot)$ that she has) and applies $f_{\mathsf{select}}$ on the set of public keys published on the blockchain up to block with hash $h$, $m = \polylog \kappa$ which will be a parameter of the protocol and the ticket $(h, \ticket)$.
+
+We provide some intuition on why this block ticket scheme underpins a secure subset selection over the public keys.
+%
+Notice that $m = \polylog \kappa$ and the public keys of enclaves controlled by honest parties account for a constant fraction of all the public keys.
+%
+By randomly selecting an element in $\binom{\mathcal{S}}{m}$, the probability that the chosen $m$-combination contains no honest public key is negligible with respect to the security parameter $\kappa$.
+%
+Furthermore, since only a ticket that is associated with a settled block will be used by parties to select public keys (otherwise the encrypted transaction will be considered illegitimate), the total number of tickets that are eligible to use throughout an execution running for $L = \poly(\kappa)$ rounds is polynomially bounded by $\kappa$ and $n$ where $n$ is the number of enclaves.
+%
+Refer to~\cref{lemma:good-block-tickets} for the formal analysis of this scheme.
+
+\begin{remark}
+	Our public-key subset selection scheme still allows transaction issuers to select the ticket that she prefers.
+	%
+	I.e., when the issuer chooses not to trust some enclaves, she can select tickets that does not contain their public keys.
+	%
+	This can be useful in the model where some enclaves can be compromised, but later honest parties get notified and avoid using their public keys.
+	%
+	In such a way the system self-heals from temporarily losing input causality.
+\end{remark}
+
+\paragraph{Issuing a transaction.}
+%
+We elaborate on how a client can issue a transaction, the code description of this procedure is presented in~\cref{algorithm:issue-new-transaction} in~\cref{subsec:protocol-desc}.
+%
+Recall that clients are not equipped with trusted hardware thus they should encrypt their transactions using the maintainers' public keys.
+%
+They can acquire the master verification key $\mathsf{mvk}$ from \funcEnclave, and the maintainers will publish their public key on the blockchain.
+%
+Further, by listening to the network they get tickets for every block in the settled part of the blockchain\footnote{Note that our protocol requires an initial enclave public key registration stage to gather sufficiently many on-chain honest enclave public keys. This requires the clients to wait until the blockchain grows to at least $2k$ blocks (where $k$ is the common prefix parameter) so that at least one honest block gathers honest public keys and gets buried sufficiently deep in the settled blockchain. This ``warm-up'' stage can be captured by enforcing the transaction process mechanism to start after the chain grows to $2k$ blocks.}.
+
+In order to send a transaction \tx, the client first picks a block \block in the settled part of her local chain; i.e., $\block \gets \chainHead{\chainPrefix{\chainLocal}{\CPLen}}$.
+%
+Let $h$ denote the hash of \block and $\mathcal{S}_h$ the set of tickets associated with $h$.
+%
+The client first picks a $(h, \ticket) \in \mathcal{S}_h$ randomly, and then selects the public keys $\mathcal{S}^\ticket_{\pk} \gets f_{\mathsf{select}}(\mathcal{S}_{\pk}, m, \ticket)$ where $\mathcal{S}_{\pk}$ denotes the set of on-chain enclave public keys up to block \block.
+%
+Let $m' = |\mathcal{S}^\ticket_{\pk}|$.
+%
+The client then encrypts \tx as $ct = (ct_1, ct_2, \ldots, ct_{m'})$ such that
+%
+\[ ct_i = \PKE.\Enc(\pk_i, (\tx \concat h)) ~\mathrm{where}~ \pk_i = \mathcal{S}^\ticket_{\pk}[i] \]
+%
+using the encryption algorithm in~\cref{algorithm:pke}.
+%
+Note that \tx denotes both the transaction content and metadata and they are all encrypted\footnote{Previous works encrypt only transaction content but metadata (e.g., transaction issuer's public key) remains transparent.}, hence each $ct_i$ is indistinguishable from a random string and can only be decrypted using the trusted hardware with public key $\pk_i$.
+
+In order to prevent the adversary from issuing ``bad'' transactions (e.g., different $ct_i$ encrypts different transactions, or \tx is not a valid transaction), a NIZKPoK proof should be attached.
+%
+Our statement is of form $\mathsf{stmt} = (h, \st,\allowbreak (ct_1, \ldots, ct_m),\allowbreak (\pk_1, \ldots, \pk_m))$ and witness $\mathsf{w} = (\tx, (r_1, \ldots, r_m))$.
+%
+The NP relation is defined as follows (where we slightly abuse the notation and let \Enc taking an additional parameter $r$ to replace the randomness generation by using $r$):
+%
+\begin{equation} \label{eq:nizk-relation}
+	\forall i \in [m], \exists (r_i, \tx) ~\mathrm{s.t.}~ ct_i = \PKE.\Enc(\pk_i, (\tx \concat h), r_i)
+	~\mathrm{and}~ \mathcal{Q}_{\mathsf{validTX}}(\tx, \st) = 1.
+\end{equation}
+%
+Note that to simplify the transaction validation, we write $\mathcal{Q}_{\mathsf{validTX}}$, taking input a transaction \tx and a blockchain state \st, as the predicate such that $\mathcal{Q}_{\mathsf{validTX}}(\tx, \st) = 1$  if and only if \tx is a valid transaction with respect to state \st.
+
+We elaborate on the NIZKPoK scheme that we are going to use.
+%
+Let \NIZK denote a NIZKPoK protocol \cite{TCC:LysRos22} consisting of six algorithms $\mathsf{Setup}$, \Prove, \Verify, $\mathsf{SimSetup}$, $\mathsf{SimProve}$ and $\mathsf{Extract}$.
+%
+Especially, \NIZK satisfies three properties, namely (i) overwhelming completeness; (ii) non-interactive multiple special honest-verifier zero-knowledge; and (iii) non-interactive special simulation-soundness.
+%
+Note that \NIZK can be implemented in the \funcGrpoRO model.
+
+After selecting the block ticket $\tau$, the set of public keys $\mathcal{S}^\ticket_{\pk}$ and generating the ciphertexts $ct$, the client then generates a NIZK proof $\pi = \NIZK.\Prove((h,\allowbreak \st,\allowbreak ct,\allowbreak \mathcal{S}^\ticket_{\pk}), (\tx, r))$ where $\st$ is the (hash of) blockchain state with respect to $h$.
+%
+The client now is ready to issue the new transaction by diffusing $(\pi, ct, \tau)$ to the network.
+
+\paragraph{Transaction decryption.}
+%
+To open a transaction associated with block hash $h$, a chain mined from $h$, progressing for at least $\Lambda$ blocks, should be provided.
+%
+We note that while in our description, clients should select a block in the immutable part of the blockchain (thus $h$ will be extended with overwhelming probability), there is actually no restrictions on the clients to prevent them from selecting a very recent block.
+%
+However, this comes with the risk of hurting liveness --- if a block \block in the unsettled part is selected for issuing a transaction and \block get orphaned, then that transaction cannot be considered legitimate on this chain.
+
+While a transaction associated with an orphaned block won't be accepted on the main chain, we highlight that all valid transactions can be opened eventually, when there is a curious adversary that works on the orphaned fork alone and hence open the encryption using his own enclave.

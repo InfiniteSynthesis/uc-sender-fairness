@@ -1,0 +1,35 @@
+\begin{cccProgram}
+	{$\mathsf{TxDec}(\PKE, \Lambda)$}
+	{tx-decryption}
+	{The enclave program for transaction decryption.}
+
+	\begin{minipage}[t]{.49\textwidth}
+		\begin{algorithmWithNumbering}{txDecCounter}
+			\Statex{\underline{$\mathsf{KeyGen}$}}
+			
+			\If{$(\sk, \pk)$ is not stored}
+			\State{Generate $(\pk, \sk) \gets \PKE.\KeyGen(1^\kappa)$}
+			\EndIf
+			
+			\State{\Return \pk.}
+		\end{algorithmWithNumbering}
+	\end{minipage}
+	%
+	\begin{minipage}[t]{.49\textwidth}
+		\begin{algorithmWithNumbering}{txDecCounter}
+			\Statex{\underline{$\mathsf{Dec}(ct, \chain)$}}
+			
+			\State{Compute $\tx \concat h \gets \PKE.\mathsf{Dec}(\sk, ct)$}
+			\oneLineIf{decryption fails}{\textbf{abort}}
+			
+			\oneLineIf{$\nexists \block \in \chain$ s.t. $H(\block) = h$}{\textbf{abort}}
+			
+			\State{Let $\ell$ denote the block height of \block}
+			\oneLineIf{$\ell + \Lambda < \chainLength{\chain}$}{\textbf{abort}}
+			
+			\oneLineIf{$\tx = 0^{|\tx|}$}{$\tx \concat h \gets \PKE.\Dec^*(\mathsf{sk}, ct)$}
+			
+			\State{\Return $(\tx, ct)$.}
+		\end{algorithmWithNumbering}
+	\end{minipage}
+\end{cccProgram}
