@@ -1,0 +1,42 @@
+\begin{cccAlgorithm}
+    {$\mathsf{ExtractTransactionSequence}(\chain)$}
+    {extract-transaction-sequence}
+    {Extract transaction sequence from a chain.}
+
+    \begin{algorithmic}[1]
+        \State{Initialize $\mathsf{txList} \gets \emptyset, \txSeqProposal \gets \varepsilon$}
+
+        \LineComment{Extract transactin timestamps}
+        \For{$i$ \textbf{from} $1$ \textbf{to} $\chainLength{\chain} - \PBWindowLen$}
+
+        \For{$\txTag = (ct, \pi, \ticket) \in \PB \in \block_i$}
+        \State{Set $B = \{\block_j \mathbin | i \le j < i + \PBWindowLen\}$}
+        \State{$t \gets \med(\{t \mathbin|  (\txTag, t) \in \PB \in B  \} \cup \{+\infty \mathbin|  \txTag \not\in \PB \in \block \})$}
+        \oneLineIf{$t \neq + \infty$}{Add $(\txTag, t)$ to $\mathsf{txList}$}
+        \EndFor
+        \EndFor
+
+        \LineComment{Construct transaction sequence}
+
+        \For{$i$ \textbf{from} $1$ \textbf{to} $\chainLength{\chain}$}
+        \State{Set $\txSeqProposal_i \gets \varepsilon$}
+
+        \If{$i \ge \PBWindowLen + \CPLen$}
+        \State{Let $\vec{\txTag}$ denote the set of transaction tag s.t. the \PBWindowLen-window of \txTag ends in $\block_{i - k}$}
+
+        \State{Order $\vec{\txTag}$ non-decreasingly based on timestamp}
+
+        \For{$\txTag \in \vec{\txTag}$}
+        \If{there is $\txTag'$ in block $\block_{i - k + 1}, \ldots \block_{i}$ s.t. $\timestamp{\txTag'} < \timestamp{\txTag}$}
+        \State{$\txSeqProposal_i \gets \txSeqProposal_i \concat \tilde{\txTag}_1 \concat \ldots \tilde{\txTag}_k \concat \txTag$ where $\tilde{\txTag}_1 \concat \ldots \tilde{\txTag}_k$ are \txTag that are in $\mathsf{txList}$ with $\timestamp{\tilde{\txTag}_i} < \timestamp{\txTag}$ however not in \txSeqProposal}
+        \EndIf
+        \EndFor
+        \EndIf
+
+        \State{$\txSeqProposal \gets \txSeqProposal \concat \txSeqProposal_i$}
+
+        \EndFor
+
+        \State{\Return \txSeqProposal}
+    \end{algorithmic}
+\end{cccAlgorithm}

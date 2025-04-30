@@ -1,0 +1,29 @@
+\begin{cccProtocol}
+    {$\mathsf{MiningProceudre}(\party, \sid)$}
+    {mining-procedure}
+    {The mining procedure in \protocFairLedger.}
+
+    \begin{algorithmic}[1]
+        \LineComment{The following steps are executed in an $(\textsc{maintain-ledger}, \sid, \mathrm{minerID})$-interruptible manner:}
+
+        \State{Set $st \gets$ Merkle root of profile blocks in $\buffer_\PB$, decrypted transactions in $\buffer_{\mathsf{tx}}$ and public keys in $\buffer_\pk$ that are not mined in \chainLocal}
+
+        \State{Set $st' \gets$ Merkle root of $((\pi_1, t_1, \ticket_1), \ldots, (\pi_k, t_k, \ticket_k))$ where $\pi_i$ is a transaction that is not settled in \chainLocal and $t_i$ its local receiving time}
+
+        \State{$h \gets H(\chainHead{\chainLocal}), h' \gets H(\chainHead{\chainPrefix{\chainLocal}{\CPLen}})$}
+
+        \State{$u \gets \mathsf{H}(ctr, \round, h, h', st, st')$}
+
+        \If{$u < T$}
+        \State{$\block \gets \langle ctr, h, h', \round, st, st' \rangle$ and $\chainLocal \gets \chainLocal \concat \block$}
+        \State{Send $(\textsc{diffuse}, \sid, \chainLocal)$ to $\funcDiffuse^{\mathsf{bc}}$ and proceed from here upon next activation of this procedure}
+        \EndIf
+
+        \If{$\stringRev{u} < T$}
+        \State{$\PB \gets \langle ctr, h, h', \round,  st, st' \rangle$}
+        \State{Send $(\textsc{diffuse}, \sid, \PB)$ to $\funcDiffuse^{\mathsf{pb}}$ and proceed from here upon next activation of this procedure}
+        \EndIf
+
+        \State{$ctr \gets ctr + 1$}
+    \end{algorithmic}
+\end{cccProtocol}

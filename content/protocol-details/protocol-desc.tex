@@ -1,0 +1,90 @@
+\subsection{A Full Protocol Description}
+\label{subsec:protocol-desc}
+
+We introduce the main \protocFairLedger protocol instance that dispatches to the relevant subprocesses.
+%
+This protocol is parameterized with the \CPLen the common prefix, $R$ the recency parameter, $m$ the public-key subset size and \PBWindowLen the profile window length.
+%
+Refer to~\cref{table:main-parameters-protocol} in~\cref{sec:glossary} for a detailed explanation.
+
+\input{protocols/main-instance}
+
+\paragraph{Registration and de-registeration.}
+%
+In order to participate in the protocol, parties need to register with their resources.
+%
+\cref{protocol:registration} captures the registration procedure.
+%
+Note that before registering with the network and random oracle, parties should check if they have access to all global functionalities.
+
+\input{protocols/fair-ledger-reg}
+
+The de-registration procedure (\cref{protocol:deregistration}) is analogous to the above, where de-registering from the ledger is simplified as dropping from the network functionality.
+
+\input{protocols/fair-ledger-dereg}
+
+\paragraph{The transactions issuing procedure.}
+%
+In order to issue a transaction \tx, party \party needs to encrypt \tx using a subset of on-chain public keys, computed from a ticket associated with a block in the settled blockchain.
+%
+Additionally, a NIZKPoK that proves the validity of \tx and the correctness of each ciphertext should be attached (See the relation in Equation~\eqref{eq:nizk-relation}).
+
+\input{protocols/issue-nex-tx}
+
+\paragraph{Fetch information.}
+%
+Parties fetch information from different diffusion functionalities --- $\funcDiffuse^{\mathsf{bc}}$, $\funcDiffuse^{\mathsf{tx}}$, $\funcDiffuse^{\mathsf{pb}}$, $\funcDiffuse^\pk$ --- to learn the new chains, profile blocks, transactions and enclave public keys, respectively.
+%
+When receiving an encrypted transaction, they verify if it provides a valid block ticket and whether it attaches a good NIZK proof.
+%
+If the transaction verifies, book-keep its local receiving time.
+
+\input{protocols/fair-ledger-fetch-info}
+
+\paragraph{Chain validation rules.}
+%
+The validation procedure (\cref{algorithm:isvalidchain}) generally follows that in Bitcoin backbone protocol, plus additionally verifying the validity and freshness of profile blocks.
+
+For simplicity, we use $\mathsf{validBlock}^T$ to verify if a block is a successful PoW.
+%
+\[ \mathsf{validBlock}^T(ctr, r, h, st, h', st') \defeq H(ctr, r, h, st, h', val) < T \wedge ctr < 2^{32} .\]
+%
+Similarly, we use use $\mathsf{validProfile}^T$ to verify if a profile block is a successful PoW by checking the reverse of the string.
+
+\input{algorithms/is-valid-chain}
+
+\paragraph{Longest chain selection.}
+%
+Parties use the same longest-chain rule (\cref{algorithm:maxvalid}) as the Bitcoin backbone protocol to select their working chain.
+
+\input{algorithms/maxvalid}
+
+\paragraph{The mining procedure.}
+%
+Parties use \twoforone PoW to extend the blockchain and mine new profile blocks.
+%
+If they succeed on either procedure, they diffuse the extended chain and new profile blocks to the corresponding diffusion network.
+
+\input{protocols/fair-ledger-mining}
+
+\paragraph{Ledger Maintenance.}
+%
+We group all the steps in the main ledger operation in $\mathsf{LedgerMaintenance}$.
+
+\input{protocols/fair-ledger-maintenance}
+
+\paragraph{Reading the state.}
+%
+Upon receiving a \textsc{read} command, parties extract a transaction list from their local chain \chainLocal.
+%
+Recall that transaction inclusion and consensus are decoupled, we first introduce an algorithm $\mathsf{ExtractTransactionSequence}$ such that, taking input a chain \chain, converts it to a sequence of blocks of transactions \txSeqProposal, which are extracted using the median timestamp.
+%
+Note that \txSeqProposal shares the same length as \chain.
+
+\input{algorithms/extract-tx-seq}
+
+When the decryption of a transaction \txTag is available, that tag is replaced with the plain transaction.
+%
+A state $\vec{\st}$ is acquired by extracting a prefix of the transaction sequence \txSeqProposal such that all transactions are decrypted.
+
+\input{protocols/fair-ledger-read-state}

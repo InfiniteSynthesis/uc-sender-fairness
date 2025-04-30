@@ -1,0 +1,44 @@
+\begin{cccAlgorithm}
+    {$\mathsf{IsValidChain}(\chain)$}
+    {isvalidchain}
+    {The chain validation rule in \protocFairLedger.}
+
+    \begin{algorithmic}[1]
+        \oneLineIf{\chain starts with a block other than \textbf{G}}{\Return \false}
+        \oneLineIf{\chain encodes an invalid state with $\mathsf{isvalidstate}(\vec{\st}) = 0$}{\Return \false}
+        \oneLineIf{\chain contains profile blocks with invalid content}{\Return \false}
+
+        \State{$r' \gets \round, \block \gets \chainHead{\chain}, h^* \gets H(\block)$}
+        \While{$\chain \neq \varepsilon$}
+        \State{$\mathsf{isValid} \gets \true$}
+
+        \LineComment{Check validity of block header}
+        \oneLineIf{$(\mathsf{validBlock}^T(\block) = \false) \vee (h^* \neq H(\block)) \vee (\timestamp{\block} \ge r')$}{$\mathsf{isValid} \gets \false$}
+
+        \LineComment{Check validity of profile blocks in \block}
+        \For{$\PB \in \block$}
+
+        \State{Parse \PB as $\langle \cdot, r, \cdot, \cdot, h', \cdot \rangle$}
+        \State{$\block' \gets $ the block in \chain s.t. $H(\block) = h'$}
+
+        \LineComment{Check validity of profile header}
+        \oneLineIf{$(\mathsf{validProfile}^T(\PB) = \false) \vee r \ge \timestamp{\block}$}{$\mathsf{isValid} \gets \false$}
+
+        \oneLineIf{$(\block' = \varepsilon) \vee r \ge \timestamp{\block'} + R$}{$\mathsf{isValid} \gets \false$}
+        \Comment{Check freshness and recency}
+
+        \EndFor
+
+        \If{$\mathsf{isValid} = \true$}
+        \State{$r' \gets r, h^* \gets h$}
+        \State{Remove the rightmost block in \chain}
+        \State{$\block \gets \chainHead{\chain}$}
+        \Else
+        \State{\Return \false}
+        \EndIf
+
+        \EndWhile
+
+        \State{\Return \true}
+    \end{algorithmic}
+\end{cccAlgorithm}

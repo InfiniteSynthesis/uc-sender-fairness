@@ -1,0 +1,15 @@
+\begin{cccAlgorithm}
+    {$\mathsf{maxvalid}(\chain_1, \ldots, \chain_k)$}
+    {maxvalid}
+    {The chain selection rule in \protocFairLedger.}
+
+    \begin{algorithmic}[1]
+        \State{$\chain_{\mathsf{max}} \gets \varepsilon$}
+        
+        \For{$i$ \textbf{from} $1$ \textbf{to} $k$}
+        \oneLineIf{$\mathsf{IsValidChain}(\chain_i)$ \textbf{and} $\chainLength{\chain_i} > \chainLength{\chain_{\mathsf{max}}}$}{$\chain_{\mathsf{max}} \gets \chain_i$}
+        \EndFor
+        
+        \State{\Return $\chain_{\mathsf{max}}$}
+    \end{algorithmic}
+\end{cccAlgorithm}

@@ -1,0 +1,15 @@
+\begin{cccProtocol}
+    {$\mathsf{Deregistration}(\party, \sid, \mathtt{Reg}, \mathcal{G})$}
+    {deregistration}
+    {The registration procedure of \protocFairLedger.}
+
+    \begin{algorithmic}[1]
+        \If{$\mathcal{G} \in \{\funcClock, \funcGRO, \funcGrpoRO, \funcEnclave \}$}
+        \State{Send $(\textsc{de-register}, \sid)$ to $\mathcal{G}$, set registration status as de-registered with $\mathcal{G}$, and output the valued received by $\mathcal{G}$.}
+        \EndIf
+
+        \If{$\mathcal{G} = \funcFairLedger$}
+        \State{Send $(\textsc{de-register}, \sid)$ to \funcDiffuse, set its registration status as de-registered with \funcDiffuse and output $(\textsc{de-register}, \sid, \party)$.}
+        \EndIf
+    \end{algorithmic}
+\end{cccProtocol}

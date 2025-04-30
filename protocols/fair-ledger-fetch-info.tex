@@ -1,0 +1,33 @@
+\begin{cccProtocol}
+    {$\mathsf{FetchInformation}(\party, \sid)$}
+    {fetch-information}
+    {The fetch-information procedure in \protocFairLedger.}
+    
+    \begin{algorithmic}[1]
+        \LineComment{Fetch blocks.}
+        \State{Send $(\textsc{fetch}, \sid)$ to $\funcDiffuse^{\mathsf{bc}}$; denote the response from $\funcDiffuse^{\mathsf{bc}}$ by $(\textsc{fetch}, \sid, b)$.}
+        \State{Extract chains $\chain_1, \ldots , \chain_k$ from $b$.}
+        \State{$\chainLocal \gets \mathsf{maxvalid}(\chainLocal, \chain_1, \ldots, \chain_k)$}
+
+        \LineComment{Fetch profile blocks.}
+        \State{Send $(\textsc{fetch}, \sid)$ to $\funcDiffuse^{\mathsf{pb}}$; denote the response from $\funcDiffuse^{\mathsf{pb}}$ by $(\textsc{fetch}, \sid, b)$.}
+        \State{Extract profile blocks $\PB_1, \ldots , \PB_k$ from $b$.}
+        \State{Set $\buffer_\PB \gets \buffer_\PB \concat (\PB_1, \ldots, \PB_k)$}
+
+        \LineComment{Fetch enclave public keys and tickets.}
+        \State{Send $(\textsc{fetch}, \sid)$ to $\funcDiffuse^\pk$; denote the response from $\funcDiffuse^\pk$ by $(\textsc{fetch}, \sid, b)$.}
+        \State{Extract all public keys $\mathsf{pk}_1, \ldots , \mathsf{pk}_k$ from $b$.}
+        \State{Set $\buffer_\pk \gets \buffer_\pk \concat (\mathsf{pk}_1, \ldots, \mathsf{pk}_k)$}
+
+        \LineComment{Fetch encrypted transactions.}
+        \State{Send $(\textsc{fetch}, \sid)$ to $\funcDiffuse^{\mathsf{tx}}$; denote the response from $\funcDiffuse^{\mathsf{tx}}$ by $(\textsc{fetch}, \sid, b)$.}
+
+        \State{Extract transactions $(\pi_1, ct_1, \ticket_1), \ldots , (\pi_k, ct_k, \ticket_k)$ from $b$.}
+
+        \For{$i$ \textbf{from} $1$ \textbf{to} $k$}
+        \If{$\ticket_i$ is valid \textbf{and} $\NIZK.\Verify(\pi) = 1$ \textbf{and} $h, st \in \pi$ match that on \chainLocal}
+        \State{$\buffer_{\mathsf{tx}} \gets \buffer_{\mathsf{tx}} \concat ((\pi_i, ct_i, \ticket_i), \round)$} \Comment{Bookkeep local receiving time \round}
+        \EndIf
+        \EndFor
+    \end{algorithmic}
+\end{cccProtocol}

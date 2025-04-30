@@ -1,0 +1,22 @@
+\begin{cccProtocol}
+    {$\mathsf{Registration}(\party, \sid, \mathtt{Reg}, \mathcal{G})$}
+    {registration}
+    {The registration procedure of \protocFairLedger.}
+
+    \begin{algorithmic}[1]
+        \If{$\mathcal{G} \in \{\funcClock, \funcEnclave \}$}
+        
+        \State{Send $(\textsc{register}, \sid)$ to $\mathcal{G}$, set registration status to registered with $\mathcal{G}$, and output the valued received by $\mathcal{G}$.}
+        
+        \ElsIf{$\mathcal{G} = \funcFairLedger$}
+        
+        \If{the party is not registered with \funcClock, \funcGRO, \funcGRO or \funcEnclave or is already registered with all setup functionalities}
+        \State{ignore this input}
+        \Else
+        \State{Send $(\textsc{register}, \sid)$ to \funcDiffuse.}
+        \State{Output $(\textsc{register}, \sid, \party)$ once completing the registration with all the above resources.}
+        \EndIf
+        
+        \EndIf
+    \end{algorithmic}
+\end{cccProtocol}

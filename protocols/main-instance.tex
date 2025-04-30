@@ -1,0 +1,48 @@
+\begin{cccProtocol}
+    {\protocFairLedger}
+    {main-protocol}
+    {The main protocol instance of \protocFairLedger.}
+    
+    \paragraph{Global Variables:}
+    %
+    \begin{cccItemize}[nosep]
+        \item Parameters: $k, R, m, \PBWindowLen$
+        
+        \item Local states: $\round, \chainLocal, \buffer_{\mathsf{tx}}, \buffer_\PB, \buffer_\pk$
+    \end{cccItemize}
+
+    \paragraph{Registration/Deregistration:}
+    %
+    \begin{cccItemize}[nosep]
+        \item Upon receiving $(\textsc{register}, \mathcal{R})$, where $\mathcal{R} \in \{ \funcFairLedger, \funcClock, \funcGRO, \funcGrpoRO, \funcEnclave \}$, execute $\mathsf{Registration}(\party, \sid, \mathtt{Reg}, \mathcal{R})$.
+
+        \item Upon receiving $(\textsc{de-register}, \mathcal{R})$, where $\mathcal{R} \in \{ \funcFairLedger, \funcClock, \funcGRO, \funcGrpoRO, \funcEnclave\}$, execute $\mathsf{Deregistration}(\party, \sid, \mathtt{Reg}, \mathcal{R})$.
+
+        \item Upon receiving input $(\textsc{is-registered}, \sid)$ return $(\textsc{register}, \sid, 1)$ if the local registry \texttt{Reg} indicates that this party has successfully completed a registration with $\mathcal{R} = \funcFairLedger$ (and did not de-register since then).
+        %
+        Otherwise, return $(\textsc{register}, \sid, 0)$.
+    \end{cccItemize}
+
+    \paragraph{Interacting with the Ledger:}
+    %
+    Upon receiving a ledger-specific input $I \in \{(\textsc{submit}, \ldots),\allowbreak (\textsc{read}, \ldots), (\textsc{maintain-ledger}, \ldots) \}$ verify first that all resources are available.
+    %
+    If not all resources are available, then ignore the input; else (i.e., the party is operational and time-aware) execute one of the following steps depending on the input $I$:
+    %
+    \begin{cccItemize}[nosep]
+        \item \textbf{If} $I = (\textsc{submit}, \sid, \tx)$ then invoke $\mathsf{IssueNewTransaction(\party, \sid, \tx)}$.
+
+        \item \textbf{If} $I = (\textsc{maintain-ledger}, \sid, \mathrm{minerID})$ \textbf{then} invoke $\mathsf{LedgerMaintenance}(\chainLocal, \party)$; if \textsf{LedgerMaintenance} halts then halt the protocol execution (all future input is ignored).
+
+        \item If $I = (\textsc{read}, \sid)$ then invoke $\mathsf{ReadState}(\party, \sid)$.
+    \end{cccItemize}
+
+    \paragraph{Handling external calls:}
+    %
+    \begin{cccItemize}[nosep]
+        \item Upon receiving $(\textsc{clock-read}, \sid_C)$ forward it to \funcClock and output \funcClock's response.
+        \item Upon receiving $(\textsc{clock-update}, \sid_C)$, record that a clock-update was received in the current round.
+        %
+        If this protocol instance is currently only registered to the clock (and no other functionality), then forward $(\textsc{clock-update}, \sid_C)$ to \funcClock.
+    \end{cccItemize}
+\end{cccProtocol}

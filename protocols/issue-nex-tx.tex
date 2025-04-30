@@ -1,0 +1,25 @@
+\begin{cccProtocol}
+    {$\mathsf{IssueNewTransaction}(\party, \sid, \tx)$}
+    {issue-new-transaction}
+    {The procedure to issue a new transaction in \protocFairLedger.}
+
+    \begin{algorithmic}[1]
+        \State{$h \gets \chainHead{\chainPrefix{\chainLocal}{\CPLen}}$ and $\st \gets$ blockchain state associated with $h$}
+        \State{$\mathcal{S}_{\pk} \gets$ all enclave public keys up to block with hash $h$}
+
+        \State{$\mathcal{S}^\ticket_{\pk} \gets f_{\mathsf{select}}(\mathcal{S}_{\pk}, m, \ticket)$ and $m' \gets |\mathcal{S}^\ticket_{\pk}|$}
+
+        \For{$i$ \textbf{from} $1$ \textbf{to} $m'$}
+        \State{$\pk_i \gets \mathcal{S}^\ticket_{\pk}[i], r_i \overset{\$}{\gets} \{0, 1\}^\kappa$}
+        \State{$ct_i \gets \PKE.\Enc(\pk_i, \tx, h;r_i)$}
+        \EndFor
+
+        \LineComment{Generate NIZK proof.}
+
+        \State{$\pi \gets \NIZK.\Prove((h, \st, (ct_1, \ldots, ct_{m'}), (\pk_1, \ldots, \pk_{m'})), (\tx,\allowbreak (r_1, \ldots, r_{m'})))$}
+
+        \State{$\buffer_{\mathsf{tx}} \gets \buffer_{\mathsf{tx}} \concat (\pi, ct_1, \ldots, ct_{m'})$}
+
+        \State{Send $(\textsf{diffuse}, \sid, (\pi, ct_1, \ldots, ct_{m'}, \ticket))$ to $\funcDiffuse^{\mathsf{tx}}$}
+    \end{algorithmic}
+\end{cccProtocol}

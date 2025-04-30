@@ -1,0 +1,31 @@
+\begin{cccProtocol}
+    {$\mathsf{LedgerMaintenance}(\party, \sid)$}
+    {ledger-maintenance}
+    {The ledger maintenance procedure in \protocFairLedger.}
+
+    \begin{algorithmic}[1]
+        \LineComment{The following steps are executed in an $(\textsc{maintain-ledger}, \sid, \mathrm{minerID})$-interruptible manner:}
+
+        \State{Invoke $\mathsf{FetchInformation}(\sid, \party)$ to receive the newest messages for this round}
+
+        \LineComment{Decrypt transactions}
+        \For{$(\pi, ct, \ticket) \in \chainLocal$}
+        \If{$\chainLength{\chainLocal} > \block+ \Lambda$ where \block is a block with hash $h$ in $\pi$ \textbf{and} $\mathsf{pk}_i \in \pi$ is miner's enclave public key}
+        \State{Send $(\textsc{tx-dec}, ct_i, \chainLocal)$ to \funcEnclave and get response $(\tx, ct, \sigma)$}
+        \State{Add $(\tx, ct, \sigma)$ to $\buffer_{\mathsf{tx}}$}
+        \EndIf
+        \EndFor
+
+        \If{$t_{\mathsf{work}} < \tau$}
+        \State{Call $\mathsf{MiningProcedure}(\party, \sid)$}
+        \State{Set $t_{\mathsf{work}} \gets \tau$}
+        \EndIf
+
+        \While{A $(\textsc{clock-update}, \sid_C)$ has not been received during the current round}
+        \State{Give up activation (set the anchor here)}
+        \EndWhile
+
+        \State{Send $(\textsc{clock-update}, \sid_C)$ to \funcClock.}
+        \Comment{Party will lose its activation here}
+    \end{algorithmic}
+\end{cccProtocol}

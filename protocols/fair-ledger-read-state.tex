@@ -1,0 +1,21 @@
+\begin{cccProtocol}
+    {$\mathsf{ReadState}(\party, \sid)$}
+    {read-state}
+    {The read state procedure in \protocFairLedger.}
+
+    \begin{algorithmic}[1]
+        \State{Invoke $\mathsf{FetchInformation}(\sid, \party)$ to receive the newest messages for this round}
+
+        \State{$\txSeqProposal \gets \mathsf{ExtractTransactionSequence}(\chainLocal)$}
+
+        \For{$\txTag = (\pi, ct, \ticket) \in \txSeqProposal$}
+        \If{there is a $\tx \in \chainLocal$ such that \tx is a signed decryption for $ct$}
+        \State{Replace \txTag with \tx}
+        \EndIf
+        \EndFor
+
+        \State{Extract the state $\vec{\st}$ from $\blockify(\txSeqProposal')$, where $\txSeqProposal'$ is a prefix of \txSeqProposal up to a block such that all transactions are decrypted}
+
+        \State{Output $(\textsc{read}, \sid, \vec{\st}^{\lceil \CPLen})$ to \Z.}
+    \end{algorithmic}
+\end{cccProtocol}
