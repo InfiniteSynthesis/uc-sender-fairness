@@ -1,0 +1,86 @@
+\section{Preliminaries}
+\label{sec:preliminaries}
+
+\paragraph{UC basics.}
+%
+We provide our protocols and security proofs in Canetti's universal composition (UC) framework~\cite{JC:Canetti00}. 
+%
+We discuss the main components of our real-world model (including the associated hybrids).
+
+We assume that the reader is familiar with simulation-based security and has basic knowledge of the (G)UC framework.
+%
+We review all the aspects of the execution model that are needed for our protocols and proof, but omit some of the low-level details and refer the interested reader to relevant works wherever appropriate.  
+
+We now recall the mechanics of activations in UC.
+%
+In a UC protocol execution, an honest party (ITI)  gets activated either by receiving an input from the environment, or by receiving a message from one of its hybrid functionalities (or from the adversary).
+%
+Any activation results in the activated ITI performing some computation on its view of the protocol and its local state, and ends with either the party sending a message to some of its hybrid functionalities, sending an output to the environment, or not sending any message at all.
+%
+In any of these cases, the party loses the activation.\footnote{In the latter
+case the activation goes to the environment by default.}
+%
+We denote the identities of parties by $\party_i$, i.e. $\party_i = (\pid_i,\sid_i)$, and call $\party_i$ a party for short.
+%
+The index $i$ is used to distinguish two identifiers, i.e., $\party_i \neq \party_j$, and otherwise carries no meaning.
+%
+We will assume a central adversary \adv who gets to corrupt miners and might use them to attempt to break the protocol's security.
+%
+As is common in (G)UC, the resources available to the parties are described as hybrid functionalities.
+%
+Our protocols are synchronous (G)UC protocols~\cite{C:BMTZ17}: parties have access to a (global) clock setup, denoted by \funcClock and can communicate over a network diffuse functionality \funcDiffuse (mode details on these functionalities are provided later).
+%
+We next sketch its main components:
+%
+All functionalities, protocols, and setups have a dynamic party set.
+%
+I.e., they all include special instructions allowing parties to register and deregister, and allow the adversary to learn the current set of registered parties.
+%
+Additionally,  global setups allow any other setup (or functionality) to
+register and deregister with them\footnote{We note that the functionality can learn the code of the registering party (functionality) by considering the \emph{extended identifier} in~\cite{TCC:BCHTZ20}.} and also allow other setups to learn their set of registered parties.
+
+\paragraph{Clock and diffusion functionality.}
+%
+Following the treatment in~\cite{C:BMTZ17}, we model the synchronous processors and bounded-delay network as \funcClock and \funcDiffuse respectively.
+%
+The global clock \funcClock maintains a round index for each session, and this index can only be forwarded when all registered honest parties (in this session) have finished their computation for this round.
+%
+The diffuse functionality \funcDiffuse captures \delay-bounded network --- i.e., when a message (either honest or adversarial) is reached by at least one honest party at round $r$, it is guaranteed to be delivered to all honest parties before round $r + \delay$.
+%
+A detailed description of these functionalities is presented in~\cref{sec:preliminaries-contd}.
+
+\paragraph{Global random oracles.}
+%
+The hash function $H$ to generate PoW is modeled as a (global) random oracle \funcGRO; by convention, we use a wrapper functionalities \wrapper{\funcGRO} to restrict the adversarial and \emph{environmental} access to \funcGRO.
+%
+We assume honest majority in terms of the computational power to solve PoWs.
+%
+I.e., in every round the RO wrapper allows more accesses from the honest parties than the corrupted (and environmental) ones.
+%
+We also adopt a restricted programmable and observable global random oracle \funcGrpoRO \cite{EC:CDGLN18} to model a hash function $G$ that is different from the one used to generate PoW.
+%
+We discuss these two global random oracles in detail in~\cref{sec:preliminaries-contd}.
+
+\paragraph{Non-interactive zero knowledge.}
+%
+For our construction we use a non-interactive, straight-line simulation extractable (NISLE) proof system that relies on \funcGrpoRO as the only setup assumption.
+%
+A protocol that satisfies such a security definition is provided  in~\cite{TCC:LysRos22}.
+%
+We assume familiarity with the notion of simulation extractable NIZK, and refer to~\cref{sec:preliminaries-contd} for the formal definition.
+
+\paragraph{Pseudorandom functions, one-way functions and hardcore bits.}
+%
+Let $F : \{0, 1\}^\ast \times \{0, 1\}^\ast \rightarrow \{0, 1\}^\ast$ be a keyed function.
+%
+$F$ is a pseudorandom function (PRF) if for all PPT distinguisher $D$ it holds that
+%
+\( | \Pr_{k \gets \{0, 1\}^n}[D^{F_k(\cdot)} = 1] - \Pr_{f \gets \mathcal{F}_n}[D^{f}(\cdot) = 1] | \le \negl(n). \)
+%
+A function $f : \{0, 1\}^* \rightarrow \{0, 1\}^*$ is a one-way function if there exists an efficient algorithm for evaluating $f$, and for all PPT adversary \adv, we have
+%
+\( \Pr_{x \gets \{0, 1\}^n}[\adv(f(x)) \in f\inv(f(x))] \le \negl(n). \)
+%
+A hardcore bit is a function $b : \{0, 1\}^\ast \rightarrow \{0, 1\}$ such that for all PPT adversary \adv, it holds that
+%
+\( \Pr_{x \gets \{0, 1\}^n}[\adv(f(x)) = b(x)]| \le \frac{1}{2} + \negl(n). \)

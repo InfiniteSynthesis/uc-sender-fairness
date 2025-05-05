@@ -1,0 +1,41 @@
+\begin{cccGame}
+    {$\mathsf{NIM}\text{-}\mathsf{SSS}^{H_*, \mathtt{Prog}}_{\adv, \Pi^{\mathtt{SLC}}_R} (1^\lambda)$}
+    {nim-sss}
+    {The non-interactive special simulation-soundness game.}
+
+    \begin{algorithmic}[1]
+        \State{$L \gets \bot$}
+
+        \State{$\mathtt{ppm}, z \gets \Pi^{\mathtt{SLC}}_R.\mathsf{SimSetup}^{\mathtt{prog}_L} (1^\lambda)$}
+
+        \State{$\st \gets \adv^{H_L}(1^\lambda, \mathtt{ppm})$}
+
+        \State{$\mathtt{pflist}, \mathtt{Response} \gets \bot$}
+
+        \While{$\st \neq \bot$}
+
+        \State{$(\mathtt{Query}, \mathcal{Q}_\adv, \st) \gets \adv^{H_L}(\st)$}
+
+        \If{$\mathtt{Query} = (\mathtt{Prove}, x, w)$}
+        \If{$R(x, w) = 1$}
+        \State{$\Pi \gets \Pi^{\mathtt{SLC}}_R.\mathsf{SimProve}^{\mathtt{prog}_L} (z, x)$}
+
+        \State{Append $(x, \pi)$ to $\mathtt{pflist}$}
+        \State{Set $\mathtt{Response} \gets (x, \pi)$}
+        \EndIf
+        \ElsIf{$\mathtt{Query} = (\mathtt{Challenge}, x, \pi)$}
+        \If{$\Pi^{\mathtt{SLC}}_R.\mathsf{Verify}^{\mathtt{prog}_L} (x, \pi) = 1$ \textbf{and} $(x, \pi) \not\in \mathtt{pflist}$}
+        \State{$w \gets \Pi^{\mathtt{SLC}}_R.\mathsf{Extract}(x, \pi, \mathcal{Q}_\adv)$}
+        
+        \If{$R(x,w) = 0$}
+        \State{\Return $\mathtt{Fail}$}
+        \EndIf
+
+        \EndIf
+        \EndIf
+
+        \EndWhile
+
+        \State{\Return $\mathtt{Success}$}
+    \end{algorithmic}
+\end{cccGame}

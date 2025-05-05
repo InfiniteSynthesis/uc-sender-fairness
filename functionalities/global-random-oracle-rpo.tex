@@ -1,0 +1,39 @@
+\begin{cccFunctionality}
+      {\funcGrpoRO}
+      {global-random-oracle-rpo}
+      {The restricted global random oracle with programmability and observability.}
+
+      The functionality is parameterized by the security parameter $\kappa$.
+      %
+      It maintains a dynamically updatable list $\mathsf{H}$ and $\mathsf{prog}$
+      %
+      Initially, $\mathsf{H} = \mathsf{prog} = \emptyset$.
+
+      \begin{enumerate}[label=\FlatSteel, leftmargin=*, nosep]
+            \item \textbf{Eval.} Upon receiving $(\textsc{eval}, m)$ from a party $(\party, \sid)$ or from the adversary, do the following:
+                  %
+                  \begin{enumerate}[label=\arabic*., leftmargin=*, nosep]
+                        \item If $\mathsf{H}[m] = \bot$, sample a value $h$ uniformly at random from $\{0, 1\}^\kappa$ and set $\mathsf{H}[m] \gets h$.
+                        \item Parse $m$ as $(s, m')$.
+                        \item If the query is made by the adversary, or if $s \neq \sid$, then add $(s, m', h)$ to the (initailly empty) list of illegitimate queries $\mathcal{Q}_s$.
+                        \item Output $(\textsc{eval}, m, h)$ to the requestor.
+                  \end{enumerate}
+
+            \item \textbf{Observe.} Upon receiving $(\textsc{observe}, \sid)$ from the adversary: If $\mathcal{Q}_\sid$ does not exist, set $\mathcal{Q}_\sid = \emptyset$. Output $(\textsc{observe}, \mathcal{Q}_\sid)$ to the adversary.
+
+            \item \textbf{Program.} Upon receiving $(\textsc{program}, m, h)$ with $h \in \{0, 1\}^\kappa$ from the adversary, do the following:
+                  %
+                  \begin{enumerate}[label=\arabic*., leftmargin=*, nosep]
+                        \item If $\exists h' \in \{0, 1\}^\kappa$ such that $\mathsf{H}[m] = h'$ and $h \neq h'$, ignore this input.
+                        \item Set $\mathsf{H}[m] \gets h$ and $\mathsf{prog} \gets \mathsf{prog} \cup \{ m \}$.
+                        \item Output $(\textsc{program}, \ok)$ to the adversary.
+                  \end{enumerate}
+
+            \item \textbf{IsProgrammed.} Upon receiving $(\textsc{is-programmed}, m)$ from a party $(\party, \sid)$ or from the adversary, do the following:
+                  %
+                  \begin{enumerate}[label=\arabic*., leftmargin=*, nosep]
+                        \item If the input was given by $(\party, \sid)$, parse $m$ as $(s, m')$. If $s \neq \sid$, ignore this input.
+                        \item Set $b \gets m \in \mathsf{prog}$ and output $(\textsc{is-programmed}, b)$ to the requestor.
+                  \end{enumerate}
+      \end{enumerate}
+\end{cccFunctionality}

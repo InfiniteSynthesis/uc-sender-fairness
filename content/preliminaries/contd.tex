@@ -1,0 +1,80 @@
+\section{Preliminaries (Cont'd)}
+\label{sec:preliminaries-contd}
+
+\paragraph{Global clock.}
+%
+We model synchronous processors using \funcClock (cf.~\cite{TCC:KMTZ13}).
+%
+At a high level, \funcClock maintains a round variable $\tau$ for each session, and the round forwards only when all registered parties send \funcClock the \textsc{clock-update} command.
+%
+The current time can be checked by sending a \textsc{clock-read} command.
+%
+Whenever a party who has finished the computation in a round is activated, she checks if the time from \funcClock has been forwarded; if not, she does nothing and wait for the next activation.
+
+\input{functionalities/global-clock}
+
+\paragraph{Diffuse functionalities.}
+%
+We model the \delay-bounded delay network with \funcDiffuse \cite{C:BMTZ17}.
+%
+Note that once a corrupted message reaches at least one honest party at round $r$, \funcDiffuse guarantees to deliver this message to all honest parties before round $r + \delay$ (i.e., honest parties keep ``echoing'' messages).
+%
+By convention, different types of messages are diffused by different functionalities, and we write $\funcDiffuse^{\mathsf{bc}}$, $\funcDiffuse^{\mathsf{tx}}$, $\funcDiffuse^{\mathsf{pb}}$, $\funcDiffuse^\pk$ to denote the network for chains, transactions, profile blocks and enclave public keys respectively.
+
+\input{functionalities/diffuse}
+
+\paragraph{Random oracle for PoW and its wrapper.}
+%
+Our random oracle for generating PoW follows that in~\cite{C:BMTZ17} except that now it is a shared functionality.
+
+\input{functionalities/global-random-oracle}
+
+In order to limit the adversary on making a certain number of queries per round, we adopt a functionality wrapper \cite{C:BMTZ17} that wraps the corresponding resource to capture such restrictions.
+%
+Note that since now \funcGRO is shared among different sessions, the adversary can ask the environment to make queries on behalf.
+%
+Hence, our wrapper \wrapper{\funcGRO} also puts restrictions on queries that are made by the environment.
+
+\input{functionalities/global-random-oracle-wrapper}
+
+\paragraph{Global random oracle.}
+%
+The restricted programmable and observable global random oracle \funcGrpoRO follows the modelling in~\cite{EC:CDGLN18}.
+%
+We allow the adversary to observe and program the GRO; meantime, every party (in the same session) can check if a point is programmed by calling the ``IsProgrammed'' interface.
+
+\input{functionalities/global-random-oracle-rpo}
+
+\paragraph{Non-interactive zero knowledge scheme \NIZK.}
+%
+The NIZKPoK scheme that we use in this paper are from \cite{TCC:LysRos22}, specifically a non-interactive, straight-line extractable (NISLE) proof
+system satisfying the following three properties.
+
+\begin{definition}
+    [Overwhelming Completeness]
+    \label{def:overwhelming-completeness}
+
+    A NISLE proof system $\Pi^{\mathtt{SLC}}_R = (\mathtt{Setup}^H, \mathtt{Prove}^H,\allowbreak \mathtt{Verify}^H, \mathtt{SimSetup}, \mathtt{SimProve}, \mathtt{Extract})$ for relation $R$ in the random-oracle model has the \emph{overwhelming completeness} property if for any security parameter $\lambda$, any random oracle $H$, any $(x, w) \in R$, and any proof $\pi \gets \Pi^{\mathtt{SLC}}_R.\mathtt{Prove}^H(x, w)$,
+    %
+    \( \Pr[\Pi^{\mathtt{SLC}}_R.\mathtt{Verify}^H(x, \pi) = 1] \ge 1 - \negl(\lambda). \)
+\end{definition}
+
+\begin{definition}
+    [Non-Interactive Multiple SHVZK]
+    \label{def:non-interactive-multiple-SHVZK}
+    
+    A NISLE proof system $\Pi^{\mathtt{SLC}}_R = (\mathtt{Setup}^H,\allowbreak \mathtt{Prove}^H,\allowbreak \mathtt{Verify}^H,\allowbreak \mathtt{SimSetup},\allowbreak \mathtt{SimProve},\allowbreak \mathtt{Extract})$ for relation $R$ in the random-oracle model has the \emph{non-interactive multiple special honest-verifier zero-knowledge (NIM-SHVZK)} property if for any security parameter $\lambda$, any random oracle $H$, any PPT adversary \adv, and a bit $b \overset{\$}{\gets} \{0, 1\}$, ther exist some negligible function \negl such that $\Pr[b' = b] \le 1 /2 + \negl(\lambda)$, where $b'$ is the result of running the game $\mathsf{NIM}\text{-}\mathsf{SHVZK}^{H_*, *}_{\adv, \Pi^{\mathtt{SLC}}_R} (1^\lambda, b)$.
+    %
+    We say \adv wins the $\mathsf{NIM}\text{-}\mathsf{SHVZK}$ game if $\Pr[b' = b] > 1 / 2 + \negl(\lambda)$.
+\end{definition}
+
+\begin{definition}
+    [Non-Interactive Special Simulation-Soundness]
+    \label{def:non-interactive-special-simulation-soundness}
+    
+    A NISLE proof system $\Pi^{\mathtt{SLC}}_R = (\mathtt{Setup}^H,\allowbreak \mathtt{Prove}^H,\allowbreak \mathtt{Verify}^H,\allowbreak \mathtt{SimSetup},\allowbreak \mathtt{SimProve},\allowbreak \mathtt{Extract})$ for relation $R$ in the random oracle model has the \emph{non-interactive special simulation-soundness} property if for any security parameter $\lambda$, any random oracle $H$, any PPT adversary \adv, there exist some negligible function \negl such that  $\Pr[\mathtt{Fail} \gets \mathsf{NIM}\text{-}\mathsf{SSS}^{H_*, \mathtt{Prog}}_{\adv, \Pi^{\mathtt{SLC}}_R} (1^\lambda)] \le \negl(\lambda)$.
+\end{definition}
+
+For completeness, we also describe the security game $\mathsf{NIM}\text{-}\mathsf{SSS}^{H_*, \mathtt{Prog}}_{\adv, \Pi^{\mathtt{SLC}}_R} (1^\lambda)$ related to the non-interactive special simulation-soundness property of the NIZK protocol where $\mathcal{Q}_\adv$ are \adv's queries to the RO (details see~\cite{TCC:LysRos22}).
+
+\input{games/nim-sss}
