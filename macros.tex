@@ -1,0 +1,385 @@
+\RequirePackage{authblk,orcidlink}
+\RequirePackage{xspace}
+\RequirePackage{amsmath,amssymb,amsfonts,amsthm,thmtools,thm-restate,amsopn}
+\RequirePackage{hyperref}
+\RequirePackage{xcolor}
+\RequirePackage{enumitem,marvosym}
+\RequirePackage[most]{tcolorbox}
+\RequirePackage{tabularx,colortbl,ltablex,booktabs}
+\RequirePackage{algpseudocode,algorithm}
+\RequirePackage[width=\textwidth,textfont=sl]{caption}
+\RequirePackage[capitalize,noabbrev]{cleveref}
+
+\usetikzlibrary{backgrounds,fit,automata,positioning,shapes.geometric,decorations.markings}
+
+\newcommand*{\mathEnv}[1]{\ensuremath{#1}\xspace}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% General Format
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand{\ignore}[1]{}
+\newcommand{\revisedText}[1]{{\color{blue}#1}}
+\renewcommand{\paragraph}[1]{\medskip\noindent{\bf #1}}
+\providecommand*\email[1]{\href{mailto:#1}{\texttt{#1}}}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Math
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand*{\EX}{\mathEnv{\mathbb{E}}}
+\newcommand*{\Var}{\mathEnv{\mathbf{Var}}}
+\renewcommand*{\Pr}{\mathEnv{\mathbf{Pr}}}
+\newcommand*{\med}{\mathEnv{\mathsf{med}}}
+\newcommand*{\concat}{\mathEnv{\mathbin\Vert}}
+\newcommand*{\defeq}{\mathEnv{\overset{\mathrm{def}}{=}}}
+
+\newcommand*{\true}{\mathEnv{\mathsf{true}}}
+\newcommand*{\false}{\mathEnv{\mathsf{false}}}
+\newcommand*{\inv}{\mathEnv{^{-1}}}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% theorem style
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% bold note for plain and definition theoremstyle
+\makeatletter
+\def\th@plain{\thm@notefont{}\itshape}
+\def\th@definition{\thm@notefont{}\normalfont}
+\makeatother
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{claim}{Claim}
+\newtheorem*{claim*}{Claim}
+\newtheorem{definition}{Definition}
+\newtheorem{fact}{Fact}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+\newtheorem{example}{Example}
+
+\Crefname{lemma}{Lemma}{Lemmas}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% complexity class
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand*{\bigO}{\mathEnv{\mathcal{O}}}
+\newcommand*{\poly}{\mathEnv{\mathsf{poly}}}
+\newcommand*{\polylog}{\mathEnv{\mathsf{polylog}}}
+\newcommand*{\negl}{\mathEnv{\mathsf{negl}}}
+\newcommand*{\NP}{\mathEnv{\mathsf{NP}}}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Tables
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\renewcommand{\tabularxcolumn}[1]{m{#1}}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% party/adv notations
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand*{\party}{\mathEnv{\mathsf{P}}}
+\newcommand*{\adv}{\mathEnv{\mathcal{A}}}
+\newcommand*{\delay}{\mathEnv{\varDelta}}
+\newcommand*{\round}{\mathEnv{\mathtt{r}}}
+
+\newcommand*{\partyset}{\mathEnv{\mathcal{P}}}
+\newcommand*{\honestPartySet}{\mathEnv{\mathcal{H}}}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% blockchain
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand*{\block}{\mathEnv{\mathcal{B}}}
+\newcommand*{\chain}{\mathEnv{\mathcal{C}}}
+\newcommand*{\chainLocal}{\mathEnv{\chain_{\mathsf{loc}}}}
+\newcommand*{\ledger}{\mathEnv{\mathcal{L}}}
+
+\newcommand*{\tx}{\mathEnv{\mathtt{tx}}}
+
+\newcommand{\chainHead}[1]{\mathEnv{\mathrm{head}(#1)}}
+\newcommand{\timestamp}[1]{\mathEnv{\mathsf{TS}(#1)}}
+\newcommand{\chainPrefix}[2]{\mathEnv{#1^{\lceil{#2}}}}
+\newcommand{\chainLength}[1]{\mathEnv{\mathrm{len}(#1)}}
+
+\newcommand*{\twoforone}{\mathEnv{2{\times}1}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Cryptograph
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand*{\PKE}{\mathEnv{\mathsf{PKE}}}
+\newcommand*{\KeyGen}{\mathEnv{\mathsf{KeyGen}}}
+\newcommand*{\Enc}{\mathEnv{\mathsf{Enc}}}
+\newcommand*{\Dec}{\mathEnv{\mathsf{Dec}}}
+\newcommand*{\pk}{\mathEnv{\mathsf{pk}}}
+\newcommand*{\sk}{\mathEnv{\mathsf{sk}}}
+
+\newcommand*{\SIG}{\mathEnv{\mathsf{SIG}}}
+\newcommand*{\Sign}{\mathEnv{\mathsf{Sign}}}
+\newcommand*{\Verify}{\mathEnv{\mathsf{Verify}}}
+\newcommand*{\NIZK}{\mathEnv{\Pi_{\mathsf{NIZK}}}}
+\newcommand*{\Prove}{\mathEnv{\mathsf{Prove}}}
+
+\newcommand*{\fPRF}{\mathEnv{f_\mathsf{PRF}}}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% UC Framework
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand*{\sid}{\mathEnv{\mathrm{sid}}}
+\newcommand*{\pid}{\mathEnv{\mathrm{pid}}}
+\newcommand*{\Z}{\mathEnv{\mathcal{Z}}}
+\newcommand*{\simulator}{\mathEnv{\mathcal{S}}}
+\newcommand*{\ok}{\mathEnv{\mathsf{ok}}}
+
+\newcommand*{\F}{\mathEnv{\mathcal{F}}}
+\newcommand*{\func}{\mathEnv{\mathcal{F}}}
+
+\newcommand*{\funcClock}{\mathEnv{\mathcal{G}_{\mathsf{Clock}}}}
+\newcommand*{\funcGRO}{\mathEnv{\mathcal{G}_{\mathsf{RO}}}}
+\newcommand*{\funcCRS}{\mathEnv{\F_{\mathsf{CRS}}}}
+\newcommand*{\funcDiffuse}{\mathEnv{\F_{\mathsf{Diffuse}}}}
+
+\newcommand*{\funcLedger}{\mathEnv{\mathcal{G}_{\mathsf{Ledger}}}}
+\newcommand*{\funcFairLedger}{\mathEnv{\mathcal{G}^{\mathsf{Fair}}_{\mathsf{Ledger}}}}
+\newcommand*{\funcEnclave}{\mathEnv{\mathcal{G}_{\mathsf{att}}}}
+\newcommand*{\funcGrpoRO}{\mathEnv{\mathcal{G}_{\mathsf{rpoRO}}}}
+
+\newcommand{\wrapper}[1]{\mathEnv{\mathcal{W}(#1)}}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Global Ledger
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand*{\blockify}{\mathEnv{\mathsf{Blockify}}}
+\newcommand*{\ledgerTime}{\mathEnv{\tau_\ledger}}
+\newcommand*{\honestInputSeq}{\mathEnv{\vec{\mathcal{I}}^T_H}}
+\newcommand*{\state}{\mathEnv{\mathtt{state}}}
+\newcommand*{\st}{\mathEnv{\mathtt{st}}}
+\newcommand*{\pt}{\mathEnv{\mathtt{pt}}}
+\newcommand*{\txid}{\mathEnv{\mathrm{txid}}}
+\newcommand*{\timedState}{\mathEnv{\vec{\tau}_{\state}}}
+\newcommand*{\tauLow}{\mathEnv{\tau_{\mathsf{low}}}}
+\newcommand*{\BTX}{\mathEnv{\mathtt{BTX}}}
+\newcommand*{\txSeqProposal}{\mathEnv{\vec{N}}}
+\newcommand*{\txSeqProposalDefault}{\mathEnv{\txSeqProposal_{\mathrm{df}}}}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Fair Ledger Protocol
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand{\protocFairLedger}{\mathEnv{\mathsf{\Pi}^{\mathsf{Fair}}_{\mathsf{Ledger}}}}
+
+\newcommand*{\PB}{\mathEnv{\mathsf{PB}}}
+\newcommand*{\PBWindowLen}{\mathEnv{K}}
+\newcommand*{\CPLen}{\mathEnv{k}}
+\newcommand{\stringRev}[1]{\mathEnv{[#1]^{\mathsf{R}}}}
+\newcommand*{\buffer}{\mathEnv{\mathtt{buffer}}}
+\newcommand*{\txTag}{\mathEnv{\mathsf{tag}}}
+\newcommand*{\ticket}{\mathEnv{\mathsf{\tau}}}
+
+\newcommand*{\badCP}{\mathEnv{\mathsf{BAD\text{-}CP}}}
+\newcommand*{\badCQ}{\mathEnv{\mathsf{BAD\text{-}CQ}}}
+\newcommand*{\badCG}{\mathEnv{\mathsf{BAD\text{-}CG}}}
+\newcommand*{\badProfile}{\mathEnv{\mathsf{BAD\text{-}PROFILE}}}
+\newcommand*{\badNIZK}{\mathEnv{\mathsf{BAD\text{-}NIZK}}}
+\newcommand*{\badDec}{\mathEnv{\mathsf{BAD\text{-}DEC}}}
+\newcommand*{\badTicket}{\mathEnv{\mathsf{BAD\text{-}TICKET}}}
+
+
+\tcbset{
+    cccBox/.style={
+            enhanced,
+            breakable,
+            attach boxed title to top left={yshift=-4mm,xshift=5mm},
+            coltitle=black,
+            boxed title style={colback=white},
+            colback=white,
+            top=5mm,
+            drop fuzzy shadow,
+            sharp corners,
+            fontupper=\small,
+            enlarge top by=2mm,
+            enlarge bottom by=3mm,
+            segmentation style = {solid, line width = .5mm}
+        }
+}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Protocol Box 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcounter{protoccolCounter}
+\setcounter{protoccolCounter}{0}
+
+\newtcolorbox[use counter=protoccolCounter]{protocolbox}[2]{
+    cccBox,
+    title={\large \textbf{Protocol} #1},
+    label=protocol:#2
+}
+
+\newcommand{\fboxfootprotocol}{}
+\newenvironment{cccProtocol}[3]{
+    \renewcommand{\fboxfootprotocol}{#3}
+    \begin{protocolbox}{#1}{#2}
+        }{
+        \tcblower
+        Protocol~{\thetcbcounter}: {\sl \fboxfootprotocol}
+    \end{protocolbox}
+}
+
+\crefname{protoccolCounter}{Protocol}{Protocols}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Functionality Box
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcounter{functionalityCounter}
+\setcounter{functionalityCounter}{0}
+
+\newtcolorbox[use counter=functionalityCounter]{functionalitybox}[2]{
+    cccBox,
+    title={\large \textbf{Functionality} #1},
+    label=functionality:#2
+}
+
+\newcommand{\fboxfootfunctinoality}{}
+\newenvironment{cccFunctionality}[3]{
+    \renewcommand{\fboxfootfunctinoality}{#3}
+    \begin{functionalitybox}{#1}{#2}
+        }{
+        \tcblower
+        Functionality~{\thetcbcounter}: {\sl \fboxfootfunctinoality}
+    \end{functionalitybox}
+}
+
+\crefname{functionalityCounter}{Functionality}{Functionalities}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Simulator Box
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcounter{simulatorCounter}
+\setcounter{simulatorCounter}{0}
+
+\newtcolorbox[use counter=simulatorCounter]{simulatorbox}[2]{
+    cccBox,
+    title={\large \textbf{Simulator} #1},
+    label=simulator:#2
+}
+
+\crefname{simulatorCounter}{Simulator}{Simulators}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Game Box
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcounter{gameCounter}
+\setcounter{gameCounter}{0}
+
+\newtcolorbox[use counter=gameCounter]{gamebox}[2]{
+    cccBox,
+    title={\large \textbf{Game} #1},
+    label=game:#2
+}
+
+\newcommand{\fboxfootgame}{}
+\newenvironment{cccGame}[3]{
+    \renewcommand{\fboxfootgame}{#3}
+    \begin{gamebox}{#1}{#2}
+        }{
+        \tcblower
+        Game~{\thetcbcounter}: {\sl \fboxfootgame}
+    \end{gamebox}
+}
+
+\crefname{gameCounter}{Game}{Games}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Program Box
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcounter{programCounter}
+\setcounter{programCounter}{0}
+
+\newtcolorbox[use counter=programCounter]{programbox}[2]{
+    cccBox,
+    title={\large \textbf{Program} #1},
+    label=program:#2
+}
+
+\newcommand{\fboxfootprogram}{}
+\newenvironment{cccProgram}[3]{
+    \renewcommand{\fboxfootprogram}{#3}
+    \begin{programbox}{#1}{#2}
+        }{
+        \tcblower
+        Program~{\thetcbcounter}: {\sl \fboxfootprogram}
+    \end{programbox}
+}
+
+\crefname{programCounter}{Program}{Programs}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Algorithm Box
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcounter{algorithmCounter}
+\setcounter{algorithmCounter}{0}
+
+\newtcolorbox[use counter=algorithmCounter]{algorithmbox}[2]{
+    cccBox,
+    title={\large \textbf{Algorithm} #1},
+    label=algorithm:#2
+}
+
+\newcommand{\fboxfootalgorithm}{}
+\newenvironment{cccAlgorithm}[3]{
+    \renewcommand{\fboxfootalgorithm}{#3}
+    \begin{algorithmbox}{#1}{#2}
+        }{
+        \tcblower
+        Algorithm~{\thetcbcounter}: {\sl \fboxfootalgorithm}
+    \end{algorithmbox}
+}
+
+\crefname{algorithmCounter}{Algorithm}{Algorithms}
+
+\makeatletter
+\algnewcommand{\LineComment}[1]{\Statex\hskip\ALG@thistlm{{\color{gray}$\triangleright$ #1}}}
+\makeatother
+\algrenewcommand{\algorithmiccomment}[1]{\hfill{\color{gray} $\triangleleft$ #1}}
+\newcommand{\oneLineIf}[2]{\State{\textbf{if} #1 \textbf{then} #2}}
+
+
+\makeatletter
+\newcommand*\ifcounter[1]{
+    \ifcsname c@#1\endcsname
+        \expandafter\@firstoftwo
+    \else
+        \expandafter\@secondoftwo
+    \fi
+}
+\makeatother
+
+\NewDocumentEnvironment{algorithmWithNumbering}{m}{
+    \begin{algorithmic}[1]
+        \ifcounter{ALG@line@#1}{}{\newcounter{ALG@line@#1}}
+        \setcounter{ALG@line}{\value{ALG@line@#1}}
+        }{
+        \setcounter{ALG@line@#1}{\value{ALG@line}
+        }
+    \end{algorithmic}%
+}
+
+\newenvironment{cccItemize}[1][]{
+    \begin{enumerate}[label=\FlatSteel, leftmargin=*, #1]
+        }{\end{enumerate}}
+
+\newenvironment{cccEnum}[1][]{
+    \begin{enumerate}[label={\arabic*.}, leftmargin=*, #1]
+        }{\end{enumerate}}
