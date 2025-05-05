@@ -1,0 +1,39 @@
+\begin{tabularx}{\textwidth}{ @{\hskip .1in} c @{\hskip .1in} X}
+    \toprule
+    \textbf{Variable}
+     & \textbf{Description}
+    \\ \midrule
+    $\kappa$
+     & Security parameter; length of the random oracle output.
+    \\ \midrule
+    $T$
+     & The target to successful solve a PoW.
+    \\ \midrule
+    $m$
+     & The size of enclave public key that clients should encrypt to; $m = \Theta(\log^2 \kappa)$.
+    \\ \midrule
+    \CPLen
+     & The common prefix parameter; $\CPLen = \Theta(\log^2 \kappa)$. When clients issue a transaction \tx, they associate \tx with the block on the tip of \chainPrefix{\chainLocal}{\CPLen}.
+    \\ \midrule
+    $R$
+     & The recency parameter of profile blocks.
+    \\ \midrule
+    \PBWindowLen
+     & The size of a window that is used to decide transaction timestamp, counted by the number of blocks.
+    \\ \midrule
+    $h_r$
+     & Number of RO queries made by honest parties at round $r$.
+    \\ \midrule
+    $t_r$
+     & Number of RO queries made by corrupted parties at round $r$.
+    \\ \midrule
+    $\delta$
+     & Advantage of honest parties $(t \le (1 - \delta) h)$.
+    \\ \midrule
+    $f$
+     & Block generation rate; the probability at least one honest party succeeds in finding a PoW in a round.
+    \\ \arrayrulecolor{black} \bottomrule
+
+    \caption{Main parameters of \protocFairLedger.}
+    \label{table:main-parameters-protocol}
+\end{tabularx}
