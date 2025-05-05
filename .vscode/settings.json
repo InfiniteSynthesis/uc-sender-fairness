@@ -1,0 +1,28 @@
+{
+    "editor.wordWrap": "wordWrapColumn",
+    "editor.fontSize": 12,
+    "latex-workshop.formatting.latex": "latexindent",
+    "editor.rulers": [
+        {
+            "column": 80,
+            "color": "#BB6588"
+        }
+    ],
+    "cSpell.mergeCSpellSettings": false,
+    "cSpell.words": [
+        "blockify",
+        "bookkeeps",
+        "ciphertext",
+        "ciphertexts",
+        "distinguisher",
+        "indistinguishability",
+        "Nakamoto",
+        "NIZK",
+        "permissioned",
+        "permissionless",
+        "polylogarithmic",
+        "timestamping",
+        "YOSO"
+    ],
+    "cSpell.enabled": true
+}
