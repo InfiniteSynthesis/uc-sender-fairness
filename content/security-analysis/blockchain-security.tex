@@ -1,0 +1,62 @@
+\subsection{Blockchain Security Properties}
+\label{subsec:blockchain-security-properties}
+
+In our protocol, a blockchain is built as an intermediate step to agree on transaction timestamp and provide long chains for decrypting transactions.
+%
+We thus first focus on the good properties on the chain --- namely, common prefix, chain growth and chain quality.
+
+\begin{cccItemize}[noitemsep]
+	\item \textbf{Common Prefix ($\mathsf{CP}$); parameterized with $k \in \mathbb{N}^+$.}
+	%
+	The chains $\chain_1, \chain_2$ possessed by two alert parties at the
+	onset of the round $r_1 < r_2$ are such that $\chainPrefix{\chain_1}{k} \preceq \chain_2$, where $\chainPrefix{\chain_1}{k}$ denotes the chain obtained by removing the last $k$ blocks from $\chain_1$, and $\preceq$ denotes the prefix relation.
+
+	\item \textbf{Chain Growth ($\mathsf{CG}$); parameterized with $\tau \in (0, 1]$ and $s \in \mathbb{N}$.}
+	% 
+	Consider a chain \chain possessed by an alert party at the onset of a round $r$. Let $r_1$ and $r_2$ be two previous rounds for which $r_1 + s \le r_2 \le r$.
+	%
+	Then $|\chain[r_1 : r_2]| \ge \tau \cdot s$ where $\tau$ is the speed coefficient.
+
+	\item \textbf{Chain Quality ($\mathsf{CQ}$); parameterized with $\mu \in (0, 1]$ and $s \in \mathbb{N}$.}
+	%
+	Consider any portion of length at least $s$ of the chain possessed by an alert party at the onset of a round; the ratio of blocks originating from alert parties is at least $\mu$. We call $\mu$ the chain quality coefficient.
+\end{cccItemize}
+
+Note that our blockchain framework can be viewed as a ``superset'' of the Bitcoin backbone protocol, where they share the same chain structure (recall that all our revisions are regarding letting the chain accept new types of ``profile blocks'' and the transaction encryption scheme is blockchain-agnostic).
+%
+Hence, following the similar arguments in~\cite{EC:GarKiaLeo15,EC:PasSeeash17,C:BMTZ17}, the following~\cref{lemma:blockchain-properties} concluding that these properties hold throughout the entire execution except with negligible probability is immediate.
+%
+Note that to simplify the presentation, we omit the detailed parametrization of the protocol but only focus on the achieved properties.
+%
+Specifically, common prefix is achieved by pruning last $\CPLen = \polylog(\kappa)$ blocks, and the chain quality parameter $\mu > 0$, indicating that there is at least one honest block for every \CPLen consecutive blocks.
+
+\begin{lemma} \label{lemma:blockchain-properties}
+	There exist protocol parametrizations such that the following properties hold throughout the an execution of \protocFairLedger for $L = \poly(\kappa)$ rounds: (i) common prefix property with parameter $\CPLen = \Theta(\polylog(\kappa))$ (ii) chain growth property with parameter $\tau_{\mathsf{CG}}$ and $s_{\mathsf{CG}}$; and (iii) chain quality with parameter $\mu > 0$ and $s = \CPLen$, except with probability negligibly small in the security parameter $\kappa$.
+\end{lemma}
+
+We next focus on the properties regarding profile blocks.
+%
+We show that honest parties can always produce profile blocks that account for the majority, for any $\PBWindowLen = \Theta(\CPLen)$ consecutive blocks on the blockchain.
+%
+We provide a sketched proof using only the common prefix, chain growth and chain quality parameter; a more refined proof and parametrization can be found in, e.g., \cite{PODC:PasShi17,EC:KiaLeoShe24}.
+
+\begin{lemma}
+	[Majority of honest profile blocks]
+	\label{lemma:good-profile-blocks}
+	If the properties as in~\cref{lemma:blockchain-properties} are not violated during the execution, then in an execution of \protocFairLedger over a lifetime of $L = \poly(\kappa)$ rounds, for any segmentation of the blockchain of $\PBWindowLen = \Theta(\CPLen)$ consecutive blocks, the majority of the profile blocks included are produced by honest parties.
+\end{lemma}
+
+
+\begin{proof}[Proof (Sketch)]
+	Consider any consecutive $K$ blocks $\block_i, \ldots \block_{i + \PBWindowLen -1}$.
+	%
+	Due to chain quality, there is at least one honest block $\block_h$ such that  $i \le h < i + \CPLen -1 $ and $\block_{h'}$ such that $i + \PBWindowLen - \CPLen < h' \le i + \PBWindowLen - 1$.
+	%
+	It suffices to show that the profile blocks produced by honest parties in the time interval between $\block_h$ and $\block_{h'}$ is larger than those produced by the corrupted parties in an interval between the time of $t$ and $t'$ where $t = \mathsf{timestamp}(\block_i) - R$ and $t' = \mathsf{timestamp}(\block_{i + \PBWindowLen - 1}) + \CPLen$.
+	%
+	By setting $R = 3\CPLen$ and $\PBWindowLen = \Theta(\CPLen)$ (the constants depends on the advantage of honest computational power compared with the corrupted parties, and the chain growth parameter $\tau_{\mathsf{CG}}$) we conclude the proof.
+\end{proof}
+
+Given that for any sliding window of \PBWindowLen blocks the majority of the profile blocks included are produced by honest parties, we consider a transaction \tx enter the system at time $t$ (when \tx is issued by corrupted parties, let $t$ denote the earliest time such that \tx is learnt by at least one honest party).
+%
+Every honest maintainer will receive \tx at a time $t'$ such that $t \le t' < t + \delay$, hence majority of the profile blocks report time in this interval --- i.e., in the final ledger \ledger, the position of \tx will be later than any transaction that enters the system at time before $t - \delay$; meantime, \tx is positioned at a place earlier than those transactions entering the system at time later than $t + \delay$.

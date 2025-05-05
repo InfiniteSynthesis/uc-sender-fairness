@@ -1,0 +1,154 @@
+\begin{simulatorbox}
+    {$\mathcal{S}_{\mathsf{ledger}}$ (Part 3 - Internal Procedures)}
+    {internal-procedures}
+
+    \begin{algorithmWithNumbering}{simulatorCounter}
+        \Statex{\underline{$\textsc{SimulateMining}(\party, \tau)$}}
+        \Comment{Simulate the mining procedure of \party in the protocol in round $\tau$}
+
+        \State{Execute $\mathsf{FetchInformation}(\party, \sid)$}
+
+        \If{$\mathsf{Update}_{\party, \tau}$}
+        \State{Send $(\textsc{clock-update}, \sid_C , \party)$ to \adv if $\mathcal{S}_{\mathsf{ledger}}$ has received such an input in round $\tau$}
+        \Else
+        \State{Execute $\mathsf{MiningProcedure}(\party, \sid)$ and set $\mathsf{Update}_{\party, \tau} \gets \true$}
+        \State{Before the activation goes to \adv, execute $\textsc{ExtendLedgerState}(\tau)$.}
+        \EndIf
+    \end{algorithmWithNumbering}
+
+    \medskip
+
+    \begin{algorithmWithNumbering}{simulatorCounter}
+        \Statex{\underbar{$\textsc{ExtendLedgerState}(\tau)$}}
+
+        \State{Let \txSeqProposal be the longest state (extracted from \chainLocal by $\mathsf{ExtractTransactionSequence}$) among all such states $\txSeqProposal_{U_p}$ where $U_p \in \honestPartySet$}
+
+        \State{Let $\txSeqProposal_\ledger$ denote the sequence reconstructed from \state in \funcFairLedger}
+
+        \oneLineIf{$|\txSeqProposal_\ledger| > |\txSeqProposal^{\lceil \CPLen}|$}{Execute $\textsc{AdjustView}(\state)$}
+
+        \If{$\txSeqProposal_\ledger$ is not a prefix of $\txSeqProposal^{\lceil \CPLen}$}
+        \State{\textbf{Abort} simulation: consistency violation.} \Comment{Event \badCP}
+        \EndIf
+
+        \State{Define the difference \textsf{diff} to be the block sequence s.t. $\txSeqProposal_\ledger \concat \mathsf{diff} = \txSeqProposal^{\lceil \CPLen}$.}
+
+        \State{Parse $\mathsf{diff} = \mathsf{diff}_1 \concat \ldots \concat  \mathsf{diff}_n$.}
+
+        \For{$j$ \textbf{from} 1 \textbf{to} $n$}
+        \State{Map each transaction \tx in this block to its unique transaction ID \txid.}
+
+        \State{Let $\mathsf{list}_j = (\txid_{j,1}, \ldots ,\txid_{j,\ell_j})$ be the corresponding list for this block $\mathsf{diff}_j$}
+
+        \If{coinbase $\txid_{j,1}$ specifies a party honest at block creation time}
+        \State{$\mathrm{hFlag} \gets 1$}
+        \Else
+        \State{$\mathrm{hFlag} \gets 0$}
+        \EndIf
+
+        \State{Output $(\textsc{next-block}, \mathsf{list}_j)$ to \funcFairLedger and receive $(\textsc{next-block}, \ok)$ as an immediate answer.}
+        \EndFor
+
+        \If{fraction of blocks with $\mathrm{hFlag} = 0$ in the recent \CPLen blocks $> 1 - \mu_{\mathsf{CQ}}$}
+        \State{\textbf{Abort} simulation: chain quality violation}
+        \Comment{Event \badCQ}
+
+        \ElsIf{state increases less than $k$ blocks during the last $k / \tau_{\mathsf{CG}}$ rounds}
+        \State{\textbf{Abort} simulation: chain growth violation}
+        \Comment{Event \badCG}
+
+        \ElsIf{honest profiles account for less than half in the last \PBWindowLen blocks}
+        \State{\textbf{Abort} simulation: profile block violation}
+        \Comment{Event \badProfile}
+        \EndIf
+
+        \LineComment{Equivocate honest transactions.}
+
+        \State{Send $(\textsc{read}, \sid)$ to \funcFairLedger and receive \state}
+
+        \For{$\tx \in \state$ \textbf{and} \txid corresponds to a faked transaction \textbf{and} $\mathsf{equivocate}_\tx = \false$}
+        \State{Let $r_1, \ldots r_m$ denote the randomenss used to generate $ct_1, \ldots, ct_m$ of \tx (via \txid)}
+        
+        \For{$i$ \textbf{from} $1$ to m}
+        \State{Split $r_i$ into $|\tx|$ pieces and for each piece $r_{i, j}$ send $(\textsc{program}, r_{i,j}, h)$ such that $h \oplus ct_i = \tx[j]$ to \funcGrpoRO}
+        \If{programming \funcGrpoRO fails}
+        \State{\textbf{Abort} simulation: failure of decryption}
+        \Comment{Event \badDec}
+        \EndIf
+        \EndFor
+        
+        \State{Set $\mathsf{equivocate}_\tx \gets \true$}
+        \EndFor
+
+        \State{Execute $\textsc{AdjustView}(\state)$}
+    \end{algorithmWithNumbering}
+
+    \medskip
+
+    \begin{algorithmWithNumbering}{simulatorCounter}
+        \Statex{\underline{$\textsc{AdjustView}(\state, \tau)$}}
+        \Comment{ Adjust the view of synchronized parties.}
+
+        \State{$\mathsf{pointers} \gets \varepsilon$}
+
+        \For{party $U_p \in \honestPartySet$ of round $\tau$}
+        \State{Execute $\mathsf{ReadState}(U_p, \sid)$ and let the chain's decoded state be $\vec{\st}_{U_p}$}
+        \EndFor
+
+        \For{each synchronized party $U_p \in (\honestPartySet \backslash \partyset_{DS})$ of round $\tau$}
+        \State{Determine the pointers $\pt_{U_p}$ s.t. $\vec{\st}_{U_p}^{\lceil \CPLen} = \state|_{\pt_{U_p}}$}
+        \If{such a point does not exist}
+        \State{\Return} \Comment{Call on invalid input or event \badCP occurred}
+        \EndIf
+
+        \oneLineIf{$\mathsf{Update}_{U_p, \tau}$}{$\mathsf{pointers} \gets \mathsf{pointers} \concat (U_p, \pt_{U_p})$}
+        \EndFor
+
+        \State{Output $(\textsc{set-slack}, \mathsf{pointers})$ to \funcFairLedger}
+
+        \LineComment{Adjust the view of desynchronized parties}
+        \State{$\mathsf{pointers} \gets \varepsilon$}
+        \State{$\mathsf{desyncStates} \gets \varepsilon$}
+
+        \For{each desynchronized party $U_p \in \partyset_{DS}$ of round $\tau$}
+
+        \If{$\mathsf{Update}_{U_p, \tau} = \false$}
+        \State{Set $\pt_{U_p}$ to be $|\vec{\st}_{U_p}^{\lceil \CPLen}|$}
+        \State{$\mathsf{pointers} \gets \mathsf{pointers} \concat (U_p, \pt_{U_p})$}
+        \State{$\mathsf{desyncStates} \gets \mathsf{desyncStates} \concat (U_p, \vec{\st}_{U_p}^{\lceil \CPLen})$}
+        \EndIf
+        \State{Output $(\textsc{set-slack}, \mathsf{pointers})$ to \funcFairLedger}
+        \State{Output $(\textsc{desync-state}, \mathsf{desyncStates})$ to \funcFairLedger}
+        \EndFor
+    \end{algorithmWithNumbering}
+
+    \medskip
+
+    \begin{algorithmWithNumbering}{simulatorCounter}
+        \Statex{\underline{$\textsc{IssueNewTransaction}(\party, \tau, m)$}}
+        \Comment{Issue dummy transactions}
+
+        \State{Let \chain denote the simulated blockchain for party \party}
+
+        \State{$h \gets \chainHead{\chain^{\lceil k}}$ and $st \gets$ blockchain state associated with $h$}
+        \State{$\mathcal{S}_{\mathsf{pk}} \gets$ all enclave public keys up to block with hash $h$}
+
+        \State{$\mathcal{S}^\ticket_{\mathsf{pk}} \gets f_{\mathsf{select}}(\mathcal{S}_{\mathsf{pk}}, m, \ticket)$ and $m' \gets |\mathcal{S}^\ticket_{\mathsf{pk}}|$}
+
+        \If{$\mathcal{S}^\ticket_{\mathsf{pk}}$ contains only corrupted enclave keys}
+        \State{\textbf{Abort} simulation: violation of good block ticket} \Comment{Event \badTicket}
+        \EndIf
+
+        \For{$i$ \textbf{from} $1$ \textbf{to} $m'$}
+        \Comment{Encrypt an all-zero string}
+
+        \State{$\mathsf{pk}_i \gets \mathcal{S}^\ticket_{\mathsf{pk}}[i], r_i \overset{\$}{\gets} \{0, 1\}^\kappa$}
+        \State{$ct_i \gets \PKE.\Enc(\mathsf{pk}_i, 0^m \concat h; r_i)$ and remember $r_i$ for equivocation later}
+        \EndFor
+
+        \LineComment{Generate fake NIZK proof, telling an all-zero string is a valid transactino.}
+        \State{$\pi \gets \NIZK.\Prove((h, st, (ct_1, \ldots, ct_{m'}), (\mathsf{pk}_1, \ldots, \mathsf{pk}_{m'})),\allowbreak (\tx, (r_1, \ldots, r_{m'})))$}
+
+        \State{\Return $(\pi, ct, \tau)$}
+    \end{algorithmWithNumbering}
+\end{simulatorbox}

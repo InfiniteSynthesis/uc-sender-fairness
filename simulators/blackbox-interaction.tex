@@ -1,0 +1,75 @@
+\begin{simulatorbox}
+    {$\mathcal{S}_{\mathsf{ledger}}$ (Part 2 - Black-Box Interaction)}
+    {black-box-interaction}
+
+    \newcommand*{\msgid}{\mathEnv{\mathsf{mid}}}
+
+    \emph{Simulation of the Network $\funcDiffuse^{\mathsf{bc}}$ (over which chains are sent) towards \adv:}
+    %
+    \begin{cccItemize}[nosep]
+        \item Upon receiving $(\textsc{diffuse}, \sid, (\chain_{i_1}, U_{i_1}), \ldots, (\chain_{i_\ell}, U_{i_\ell}))$ with a list of chains and corresponding parties from \adv (or on behalf some corrupted $\party \in \partyset$), then do the following:
+        %
+        \begin{cccEnum}[nosep]
+            \item Relay this input to the simulate network functionality and record its response to \adv.
+            \item Execute $\textsc{ExtendLedgerState}(\ledgerTime)$.
+            \item Provide \adv with the recorded output of the simulated network.
+        \end{cccEnum}
+
+        \item Upon receiving $(\textsc{diffuse}, \sid, \chain)$ from \adv on behalf of some \emph{corrupted} party \party, then do the following:
+        %
+        \begin{cccEnum}[nosep]
+            \item Relay this input to the simulate network functionality and record its response to \adv.
+            \item Execute $\textsc{ExtendLedgerState}(\ledgerTime)$.
+            \item Provide \adv with the recorded output of the simulated network.
+        \end{cccEnum}
+
+        \item Upon receiving $(\textsc{fetch}, \sid)$ from \adv on behalf some corrupted $\party \in \partyset$ forward the request to the simulated $\funcDiffuse^{\mathsf{bc}}$ and return whatever is returned to \adv.
+
+        \item Upon receiving $(\textsc{delays}, \sid, (T_{\msgid_{i_1}}, \msgid_{i_1}), \ldots, (T_{\msgid_{i_\ell}}, \msgid_{i_\ell}))$ from \adv forward the request to the simulated $\funcDiffuse^{\mathsf{bc}}$ and record the answer to \adv.
+        %
+        Before giving this answer to \adv, query the ledger state \state and execute $\textsc{AdjustView}(\state, \ledgerTime)$.
+
+        \item Upon receiving $(\textsc{swap}, \sid, \msgid, \msgid')$ from \adv forward the request to the simulated $\funcDiffuse^{\mathsf{bc}}$ and record the answer to \adv.
+        %
+        Before giving this answer to \adv, query the ledger state \state and execute $\textsc{AdjustView}(\state, \ledgerTime)$.
+    \end{cccItemize}
+
+    \medskip\emph{Simulation of the Network $\funcDiffuse^{\mathsf{tx}}$ (over which transactions are sent) towards \adv:}
+    %
+    \begin{cccItemize}[nosep]
+        \item Upon receiving $(\textsc{diffuse}, \sid, \tx = (\pi, ct, \tau))$ from \adv (or on behalf some corrupted $\party \in \partyset$), then do the following:
+        %
+        \begin{cccEnum}[nosep]
+            \item If $\tau$ is a valid ticket with respect to an existing block that only contains corrupted enclave public keys, \textbf{Abort} simulation: violation of good ticket (event \badTicket)
+            \item Extract \tx from $\pi$ using $\NIZK.\mathsf{SimSetup}$, $\NIZK.\mathsf{SimProve}$ and $\NIZK.\mathsf{Extract}$. If extraction fails, \textbf{Abort} simulation: violation of good NIZK (event \badNIZK)
+            \item Submit \tx to the ledger on behalf of this corrupted party, and receive for the transaction id \txid.
+            \item Forward the request to the internally simulated $\funcDiffuse^{\mathsf{tx}}$, which replies for each message with a message-ID \msgid.
+            \item Remember the association between \msgid and the corresponding \txid.
+            \item Provide \adv with whatever the network outputs.
+        \end{cccEnum}
+
+        \item Upon receiving $(\textsc{fetch}, \sid)$ from \adv on behalf some corrupted $\party \in \partyset$ forward the request to the simulated $\funcDiffuse^{\mathsf{tx}}$ and return whatever is returned to \adv.
+
+        \item Upon receiving $(\textsc{delays}, \sid, (T_{\msgid_{i_1}}, \msgid_{i_1}), \ldots (T_{\msgid_{i_\ell}}, \msgid_{i_\ell}))$ from \adv forward the request to the simulated $\funcDiffuse^{\mathsf{tx}}$ and return whatever is returned to \adv.
+
+        \item Upon receiving $(\textsc{swap}, \sid, \msgid, \msgid')$ from \adv forward the request to the simulated $\funcDiffuse^{\mathsf{tx}}$ and return whatever is returned to \adv.
+    \end{cccItemize}
+
+    \medskip\emph{Simulation of the Network $\funcDiffuse^{\mathsf{pb}}$ ($\funcDiffuse^\pk$ resp.) (over which input blocks [enclave public keys resp.] are sent) towards \adv:}
+
+    \begin{cccItemize}[nosep]
+        \item Upon receiving $(\textsc{diffuse}, \sid, m)$ from \adv with an input block $m$ on behalf some corrupted $\party \in \partyset$, then do the following:
+        %
+        \begin{cccEnum}[nosep]
+            \item Forward the request to the internally simulated $\funcDiffuse^{\mathsf{pb}}$ ($\funcDiffuse^\pk$ resp.), which replies for each message with a message-ID \msgid.
+            \item Remember the association between \msgid and the corresponding input block.
+            \item Provide \adv with whatever the network outputs.
+        \end{cccEnum}
+
+        \item Upon receiving $(\textsc{fetch}, \sid)$ from \adv on behalf some corrupted $\party \in \partyset$ forward the request to the simulated $\funcDiffuse^{\mathsf{pb}}$ ($\funcDiffuse^\pk$ resp.) and return whatever is returned to \adv.
+
+        \item Upon receiving $(\textsc{delays}, \sid, (T_{\msgid_{i_1}}, \msgid_{i_1}), \ldots (T_{\msgid_{i_\ell}}, \msgid_{i_\ell}))$ from \adv forward the request to the simulated $\funcDiffuse^{\mathsf{pb}}$ ($\funcDiffuse^\pk$ resp.) and return whatever is returned to \adv.
+
+        \item Upon receiving $(\textsc{swap}, \sid, \msgid, \msgid')$ from \adv forward the request to the simulated $\funcDiffuse^{\mathsf{pb}}$ ($\funcDiffuse^\pk$ resp.) and return whatever is returned to \adv.
+    \end{cccItemize}
+\end{simulatorbox}

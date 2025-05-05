@@ -1,0 +1,55 @@
+\begin{simulatorbox}
+    {$\mathcal{S}_{\mathsf{ledger}}$ (Part 1 - Main structure)}
+    {main-structure}
+
+    \paragraph{Overview:}
+    %
+    \begin{cccItemize}[nosep]
+        \item The simulator internally emulates all local UC functionalities by running the code (and keeping the state) of \funcGRO, $\funcDiffuse^{\mathsf{bc}}$, $\funcDiffuse^{\mathsf{tx}}$ and $\funcDiffuse^{\mathsf{pb}}$.
+
+        \item The simulator mimics the execution of \protocFairLedger for each honest party $U_p$ (including their state and the interaction with the hybrids).
+
+        \item The simulator emulates a view towards the adversary \adv in a black-box way, i.e., by internally running adversary \adv and simulating his interaction with the protocol (and hybrids) as detailed below for each hybrid.
+        %
+        To simplify the description, we assume \adv does not violate the requirements by the wrapper \wrapper{\funcGRO}.
+
+        \item For global functionalities \funcGRO and \funcEnclave, the simulator simply relays the messages sent from \adv to the
+        global functionalities (and returns the generated replies).
+        %
+        Recall that the ideal world consists of the dummy parties, the ledger functionality, the clock, the global random oracles and the enclave.
+    \end{cccItemize}
+
+    \paragraph{Party sets:}
+    %
+    An honest miner \party registered to \funcFairLedger is assumed to be registered in all simulated functionalities.
+    %
+    Upon any activation, the simulator will query the current party set from the ledger (and simulate the corresponding message they send out to the network in the first maintain-ledger activation after registration), query all activations from honest parties \honestInputSeq, and read the current clock value to learn the time.
+    %
+    In particular, the simulator knows which parties are honest and synchronized and which parties are de-synchronized.
+
+    \paragraph{Messages from the clock:}
+    %
+    Upon receiving $(\textsc{clock-update}, \sid_C , U_p)$ from \funcClock, if $U_p$ is an honest registered party, then remember that this party has received such a clock update (and the environment gets an activation).
+    %
+    Otherwise, send $(\textsc{clock-update}, \sid_C , U_p)$ to \adv.
+
+    \paragraph{Messages from the ledger:}
+    %
+    \begin{cccItemize}[nosep]
+        \item Upon receiving $(\textsc{submit}, m, \txid, \tau, \party)$ from \funcFairLedger where $m$ denotes the transaction length, execute $\textsc{IssueNewTransaction}(\party, \tau, m)$ and denote response by $(\pi, ct, \ticket)$.
+        %
+        Forward $(\textsc{diffuse}, \sid,\allowbreak (\pi, ct, \ticket))$ to the simulated network $\funcDiffuse^{\mathsf{tx}}$ in the name of \party.
+        %
+        Output the answer of $\funcDiffuse^{\mathsf{tx}}$ to the adversary.
+
+        \item Upon receiving $(\textsc{maintain-ledger}, \sid, \mathrm{minerID})$ from \funcFairLedger, extract from \honestInputSeq the party \party that issued this query.
+        %
+        If \party has already completed its round-task, then ignore this request.
+        %
+        Otherwise, execute $\textsc{SimulateMining}(\party, \ledgerTime)$.
+    \end{cccItemize}
+
+    \paragraph{Messages from \funcGrpoRO:}
+    %
+    \simulator acts as a dummy adversary and forward all responses from \funcGrpoRO to its requestor except that when receiving a $(\textsc{is-programmed}, m)$ request, return $(\textsc{is-programmed}, \false)$ if the $m$ is previously programed by the simulator.
+\end{simulatorbox}

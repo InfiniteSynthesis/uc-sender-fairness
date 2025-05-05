@@ -1,0 +1,45 @@
+\section{Security Analysis}
+\label{sec:security-analysis}
+
+\paragraph{Overview of the security analysis.}
+%
+In the ideal world, the simulator \simulator simulates the network functionality for a black-box adversary \adv; \simulator also simulates the ledger maintenance procedure of honest parties and jointly builds a blockchain with \adv.
+%
+When dummy parties issue new transactions, \simulator generates a fake ciphertext of an all-zero string and send it to the simulated network.
+%
+When an encrypted transaction is received from \adv, \simulator extracts the plain transaction by using \NIZK.
+%
+Importantly, when the simulated blockchain has progressed such that \simulator learns the transaction order, \simulator proposes those transactions (using \txid) to \funcFairLedger and thus learn the honest transactions.
+%
+\simulator then programs the \funcGrpoRO (and hides this ``isProgramed'' information to \adv) and equivocate the corresponding encrypted transactions to the real honest transaction.
+
+We provide some more details on handling honest transactions.
+%
+When the ledger \funcFairLedger notifies \simulator that a dummy honest party \party submits a new transaction of length $m$ with \txid at time $\tau$, \simulator simulates the $\mathsf{IssueNewTransaction}$ procedure for \party by associating a block \block with this transaction, based on \party's simulated local chain state (see \textsc{IssueNewTransaction} in $\mathcal{S}_{\mathsf{ledger}}$ Part~\ref{simulator:internal-procedures}).
+%
+In order to learn the honest transactions, \simulator waits until that in the simulated blockchain, all transactions that might precede the transaction with \txid get settled.
+%
+\simulator proposes the sequence of transactions to \funcFairLedger and thus learns the transaction \tx that is associated with \txid.
+%
+Note that since the transaction decryption interval parameter $\Lambda$ is set slightly longer than the time that it will get settled on the blockchain, \simulator always has enough time to program \funcGrpoRO and equivocate the ciphertext of an all-zero string to \tx.
+%
+We detail this part in \textsc{ExtendLedgerState} in $\mathcal{S}_{\mathsf{ledger}}$ Part~\ref{simulator:internal-procedures}.
+
+The simulator terminates when certain bad event happens.
+%
+Specifically, we define the following bad events \badCP (violation of common prefix), \badCQ (violation of chain quality), \badCG (violation of chain growth), \badProfile (violation of honest profile majority in any \PBWindowLen consecutive blocks), \badNIZK (failure of the NIZK scheme), \badDec (failure of transaction equivocation), \badTicket (failure of selecting enclave public-key subset with at least one honest key).
+%
+We prove that all these bad events happen with negligible probability with respect to the security parameter.
+%
+Hence, the simulator can run the simulation for any polynomial time without abortion.
+
+\paragraph{The simulator.}
+%
+We present the simulator used in the UC proof of \protocFairLedger that securely implements the ledger functionality \funcFairLedger.
+
+\input{simulators/main-structure}
+\input{simulators/blackbox-interaction}
+\input{simulators/internal-procedures}
+
+\input{content/security-analysis/blockchain-security}
+\input{content/security-analysis/composable-guarantees}

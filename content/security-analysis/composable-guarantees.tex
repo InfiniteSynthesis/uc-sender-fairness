@@ -1,0 +1,115 @@
+\subsection{Composable Guarantees}
+\label{subsec:composable-guarantees}
+
+\cref{subsec:blockchain-security-properties} shows that when the simulator jointly builds the blockchain with the black-box adversary, bad events regarding the violation of good blockchain properties, namely \badCP, \badCQ, \badCG and \badProfile, happens with negligible probability.
+%
+We next prove that the simulator \simulator can simulate the transaction encryption mechanism well, by showing that all bad events \badTicket, \badNIZK and \badDec happen with negligible probability.
+%
+Our proof makes use of the following large convergence bound.
+
+\begin{theorem}
+	[Chernoff bounds]
+	\label{thm:chernoff-bounds}
+
+	Suppose $\{X_i: i \in [n]\}$ are mutually independent Boolean random variables, with $\Pr[X_i = 1] = p$, for all $i \in [n]$. Let $X =\sum^n_{i = 1} X_i$ and $\mu = pn$.
+	%
+	Then, for any $\delta \in (0, 1]$, it holds that
+	%
+	\[
+		\Pr [X \le (1 - \delta) \mu] \le e^{- \delta^2 \mu / 2}
+		~~\text{and}~~
+		\Pr [X \ge (1 + \delta) \mu] \le e^{- \delta^2 \mu / 3}.
+	\]
+	%
+	Also, for all $t > 0$,
+	%
+	\[ \Pr[X \ge \mu + t] \le e^{-2 t^2 n}. \]
+\end{theorem}
+
+First, we consider \badTicket which implies that the adversary \adv can send an encrypted transaction such that all public keys used in the encryption are from enclaves controlled by the corrupted parties thus \adv can decided whether to open the transaction or not.
+
+\begin{lemma}
+	[Good block tickets]
+	\label{lemma:good-block-tickets}
+	Consider an execution of \protocFairLedger over a lifetime of $L = \poly(\kappa)$ rounds.
+	%
+	The probability such that there exists a block ticket $(h, \ticket)$ such that $h$ equals the hash of a block in the settled part of the blockchain held by an honest party (at any time during the execution) is negligible with respect to the security parameter $\kappa$.
+\end{lemma}
+
+\begin{proof}
+	Recall that the mining target $T$ is appropriately parameterized such that the block generation rate $f < 1$ is a small constant, by applying Chernoff bound (\cref{thm:chernoff-bounds}), the number of blocks generated in $L = \poly(\kappa)$ rounds is bounded by $(1 + \epsilon)f \cdot L$ except with probability $\exp(- \epsilon^2 f L / 3) = \exp(-\Omega(\poly(\kappa)))$ which is negligibly small with respect to $\kappa$.
+	%
+	I.e., consider $n$ enclaves, at most $n \cdot \poly(\kappa)$ block tickets will be associated with hash of a block in the settled blockchain.
+
+	Let $p \in (0 ,1]$ denote the fraction of honest enclave public keys.
+	%
+	We first consider a variant of~\cref{program:block-ticket} where for each hash $h$, the enclave returns a randomly selected value (and records this value for $h$ for later queries), which applies a random subset selection on the set of enclave public-key set $\mathcal{S}_\pk$ for each $h$.
+	%
+	We show that by randomly select a subset of size $m = \polylog (\kappa)$ in $\mathcal{S}_\pk$ for $n \cdot \poly(\kappa)$ times, the probability such that event $E$ --- there exists at least one selected subset such that all keys are from the enclaves controlled by corrupted corrupted parties --- is negligible.
+	%
+	For each random subset selection, the probability that no honest key is selected is bounded by $(1 - p)^m < \exp(-\Omega(\polylog\kappa))$, by selecting $n \cdot \poly(\kappa)$ we get $\Pr[E] = 1 - (1 - \exp(-\Omega(\polylog\kappa)))^{n \cdot \poly(\kappa)} = \exp(-\Omega(\polylog(\kappa)) + \ln n)$ which is negligible in $\kappa$.
+
+	Now it suffices to show that by replacing the random number with $\fPRF(\mathsf{key}, h)$, for each ticket there is still at least one key controlled by honest party get selected.
+	%
+	This can be proved by a reduction to the indistinguishability experiment of the underlying pseudorandom function \fPRF which we omit here (note that while each enclave possesses her own key, since the total number of the enclaves are polynomially bounded this does not hurt the argument).
+\end{proof}
+
+Then we consider \badNIZK which implies that the simulator \simulator cannot extract the encrypted transactions issued by the corrupted parties thus the simulation fails (note that it is not hard to see that the event such that honest parties fail to create a proof, or the corrupted parties generate a proof for a relation not in~\cref{eq:nizk-relation} is negligible).
+
+\begin{lemma}
+	[Good NIZK]
+	\label{lemma:good-nizk}
+	The probability that the simulator fails to extract the witness from a NIZK proof created by the black-box adversary is negligibly small in the security parameter $\kappa$.
+\end{lemma}
+
+\begin{proof}
+	We prove this by a reduction to the security game of the special simulation-soundness (\cref{game:nim-sss} in~\cref{def:non-interactive-special-simulation-soundness}), and show that if the simulator fails to extract, then the game returns \texttt{fail} with non-negligible probability, contradicting the fact that \NIZK is non-interactive special simulation-soundness.
+
+	The reduction in general works as follows.
+	%
+	When the simulator \simulator is to generate a NIZK proof for dummy honest parties, \simulator forwards the query $(\mathtt{Prove}, x, w)$ as that in~\cref{game:nim-sss}; when receiving a proof $(x, \pi)$ from the black-box adversary, \simulator forwards $(\mathtt{Challenge}, x, \pi)$ and extracts the witness.
+	%
+	If this extraction fails and simulator aborts, then in~\cref{game:nim-sss} it must be the case that after running the $\mathsf{Extract}$ algorithm and get witness $w$ it holds that $R(x, w) = 0$.
+	%
+	I.e., if the simulator aborts for the failed extraction with non-negligible probability, then in~\cref{game:nim-sss} it also returns \texttt{Fail} with non-negligible probability.
+\end{proof}
+
+Recall that in~\cref{lemma:pke-indistinguishability}, the black-box adversary \adv cannot distinguish if a plaintext of \PKE is decrypted by \Dec or $\Dec^*$, finally we consider the event \badDec which implies that the simulator fails to equivocate a faked ciphertext to its corresponding honest transaction.
+
+\begin{lemma}
+	[Good decryption]
+	\label{lemma:good-decryption}
+	The probability such that when \adv queries \funcEnclave a faked ciphertext $ct$ of an all-zero string corresponding to transaction \tx and \funcEnclave returns a response other than $(\textsc{tx-dec}, (\tx, ct))$ is negligible with respect to the security parameter $\kappa$.
+\end{lemma}
+
+\begin{proof}
+	The event of \badDec happens, because either \simulator has no time to program the random oracle, or the programming fails.
+
+	We first consider the case that \simulator has no time to program.
+	%
+	Note that since the decryption parameter is set as $\Lambda > 4\CPLen + \PBWindowLen$, for an honest transaction \tx that associates with a block with height $\ell$, there will exist an honest block with height at most $\ell + 2\CPLen$ (due to chain quality) such that it contains the profile blocks with \tx.
+	%
+	I.e., when the blockchain has progressed to length $\ell + 4\CPLen + \PBWindowLen$, the timestamp of \tx get settled, and the same holds for all transactions that enters the system before \tx.
+	%
+	Hence \simulator can propose a block containing \tx and learn its plaintext before the chain grows to length $\ell + \Lambda > \ell + 4\CPLen + \PBWindowLen$; i.e., when the simulator program all ciphertext for \tx the \textsc{tx-dec} interface will never try to use $\Dec^\ast$ to decrypt $ct$ of \tx.
+
+	Regarding the event that programming \funcGrpoRO fails, note that this only happens when the point $x$ to program has already been queried before.
+	%
+	Note that for any point $x$ to program, there exists a (piece of) ciphertext $ct$ with respect to $\mathsf{pk} = (\mathsf{f}, \mathsf{b})$, such that $ct = \mathsf{f}(x)$.
+	%
+	If the event that any programming on point $x$ fails, then it implies $\Pr_{x \in\{0 ,1\}^\kappa}[\adv(f(x)) \in \mathsf{f}\inv(\mathsf{f}(x))]$ is non-negligible, contradicting the fact that $\mathsf{f}$ is a secure one-way function.
+\end{proof}
+
+We conclude that our protocol \protocFairLedger, when appropriately parameterized, securely realizes \funcFairLedger in an $(\funcClock,\allowbreak \wrapper{\funcGRO},\allowbreak \funcDiffuse,\allowbreak \funcEnclave,\allowbreak \funcGrpoRO)$-hybrid environment.
+
+\begin{theorem}
+	Let \delay denote the network delay, $\tau_{\mathsf{CG}}$ the chain-growth coefficient, \CPLen the common prefix parameter, \PBWindowLen the length of profile block window and $\PKE, \Lambda$ the parameter of \cref{program:tx-decryption} where \PKE is as specified in~\cref{algorithm:pke}.
+	%
+	Assuming honest majority in terms of computational power and honest parties controlling a constant fraction of enclave public keys, there exists protocol parametrization ($\CPLen = \Theta(\delay \log^2 \kappa)$, $\PBWindowLen = \Theta(k)$ and $\Lambda = \PBWindowLen + 5\CPLen$, $h / n = \Omega(\log^2 \kappa)$) such that Protocol \protocFairLedger UC-realizes \funcFairLedger parameterized with \delay-\textsf{ApproxSenderOrder}, with $\mathtt{windowSize} = k$, $\mathtt{Delay} = 2\delay$ and $\mathtt{waitTime} = (4\CPLen + \PBWindowLen) / \tau_{\mathsf{CG}}$, in the $(\funcClock,\allowbreak \wrapper{\funcGRO},\allowbreak \funcDiffuse,\allowbreak \funcEnclave,\allowbreak \funcGrpoRO)$-hybrid environment.
+\end{theorem}
+
+\begin{proof}[Proof (Sketch)]
+	We prove the theorem by providing a simulator $\mathcal{S}_{\mathsf{ledger}}$ in the ideal world such that the protocol execution in the  $(\funcClock,\allowbreak \wrapper{\funcGRO},\allowbreak \funcDiffuse,\allowbreak \funcEnclave,\allowbreak \funcGrpoRO)$-hybrid world is indistinguishable from the ideal-world execution with the ledger functionality and the simulator.
+	%
+	This simulation can be done perfectly, as the only events that prevent a successful simulation are those defined by \badCP, \badCQ, \badCG, \badProfile, \badNIZK and \badDec, which we have been proving in the previous \cref{lemma:blockchain-properties,lemma:good-profile-blocks,lemma:good-block-tickets,lemma:good-nizk,lemma:good-decryption} that happens with negligible probability.
+\end{proof}
