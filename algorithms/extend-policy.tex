@@ -77,8 +77,8 @@
 		\LineComment{Bootstrapping cannot take too much time}
 		\oneLineIf{$\tauLow = 0$ \textbf{and} $\ledgerTime - \tauLow > 2 \cdot \mathtt{maxTime_{window}}$}{\Return \txSeqProposalDefault}
 
-		\LineComment{Old enough, valid transactions should be included}
 		\oneLineIf{$\mathsf{oldValidTxMissing}$}{\Return \txSeqProposalDefault}
+		\Comment{Old enough, valid transactions should be included}
 
 		\State{\Return \txSeqProposal}
 	\end{algorithmic}
