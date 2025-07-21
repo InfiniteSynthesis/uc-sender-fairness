@@ -149,7 +149,7 @@ For every maintainer, once they receive a valid block \block with hash $h$, they
 
 We then consider a function $f_{\mathsf{select}}(\mathcal{S}, m, \ticket)$ which, taking a set $\mathcal{S}$, a threshold $m \in \mathbb{N}^+$ and $\ticket \in \{0, 1\}^\kappa$ as parameters, outputs an element in $\mathcal{S}$.
 %
-Formally, let $\binom{\mathcal{S}}{m}$ denote the the (ordered) set of all $m$-combinations of $\mathcal{S}$ (when $|\mathcal{S}| < m$, $f_{\mathsf{select}} $ returns $\mathcal{S}$ directly), we define the selection function as
+Formally, let $\binom{\mathcal{S}}{m}$ denote the (ordered) set of all $m$-combinations of $\mathcal{S}$ (when $|\mathcal{S}| < m$, $f_{\mathsf{select}} $ returns $\mathcal{S}$ directly), we define the selection function as
 %
 \begin{equation*}
 	f_{\mathsf{select}} = \binom{\mathcal{S}}{m} \bigg[\ticket \mod \Big|\binom{\mathcal{S}}{m} \Big| \bigg].
@@ -165,7 +165,7 @@ Notice that $m = \polylog \kappa$ and the public keys of enclaves controlled by 
 %
 By randomly selecting an element in $\binom{\mathcal{S}}{m}$, the probability that the chosen $m$-combination contains no honest public key is negligible with respect to the security parameter $\kappa$.
 %
-Furthermore, since only a ticket that is associated with a settled block will be used by parties to select public keys (otherwise the encrypted transaction will be considered illegitimate), the total number of tickets that are eligible to use throughout an execution running for $L = \poly(\kappa)$ rounds is polynomially bounded by $\kappa$ and $n$ where $n$ is the number of enclaves.
+Furthermore, since only a ticket that is associated with a settled block will be used by parties to select public keys (otherwise the encrypted transaction will be considered illegitimate), the total number of valid tickets throughout an execution running for $L = \poly(\kappa)$ rounds is polynomially bounded by $\kappa$ and $n$ where $n$ is the number of enclaves.
 %
 Refer to~\cref{lemma:good-block-tickets} for the formal analysis of this scheme.
 

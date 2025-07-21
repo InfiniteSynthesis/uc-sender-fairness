@@ -33,11 +33,11 @@
 	\begin{minipage}[t]{.49\textwidth}
 		\begin{algorithmWithNumbering}{PKEcounter}
 			\Statex{\underline{$\Dec(ct)$}}
-			\State{Parse $\mathsf{sk}$ as $(\mathsf{f}_i, \mathsf{f}\inv_i, \mathsf{b}_i)$ and $ct$ as $ct_1, \ldots, ct_k$.}
+			\State{Parse $\mathsf{sk}$ as $(\mathsf{f}, \mathsf{f}\inv, \mathsf{b})$ and $ct$ as $ct_1, \ldots, ct_k$.}
 
 			\For{$i$ \textbf{from} $1$ \textbf{to} $k$}
 			\State{Parse $ct_i$ as $ct'_i \concat b'_i$}
-			\State{Compute $x'_i \gets \mathsf{f}\inv_i(ct'_i)$}
+			\State{Compute $x'_i \gets \mathsf{f}\inv(ct'_i)$}
 			\State{Set $m'_i \gets \mathsf{b}(x'_i) \oplus b'_i$}
 			\EndFor
 			\State{Set $m' \gets m'_1, \ldots, m'_k$ and \Return $m'$.}
@@ -47,11 +47,11 @@
 
 		\begin{algorithmWithNumbering}{PKEcounter}
 			\Statex{\underline{$\Dec^*(ct)$}}
-			\State{Parse $\mathsf{sk}$ as $(\mathsf{f}_i, \mathsf{f}\inv_i, \mathsf{b}_i)$ and $ct$ as $ct_1, \ldots, ct_k$.}
+			\State{Parse $\mathsf{sk}$ as $(\mathsf{f}, \mathsf{f}\inv, \mathsf{b})$ and $ct$ as $ct_1, \ldots, ct_k$.}
 	
 			\For{$i$ \textbf{from} $1$ \textbf{to} $k$}
 			\State{Parse $ct_i$ as $ct'_i \concat b'_i$}
-			\State{Compute $x'_i \gets \mathsf{f}\inv_i(ct'_i)$}
+			\State{Compute $x'_i \gets \mathsf{f}\inv(ct'_i)$}
 			\State{Set $m'_i \gets \funcGrpoRO(x'_i) \oplus b'_i$}
 			\EndFor
 			\State{Set $m' \gets m'_1, \ldots, m'_k$ and \Return $m'$.}

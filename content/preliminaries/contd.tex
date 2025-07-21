@@ -31,7 +31,7 @@ Our random oracle for generating PoW follows that in~\cite{C:BMTZ17} except that
 
 In order to limit the adversary on making a certain number of queries per round, we adopt a functionality wrapper \cite{C:BMTZ17} that wraps the corresponding resource to capture such restrictions.
 %
-Note that since now \funcGRO is shared among different sessions, the adversary can ask the environment to make queries on behalf.
+Note that since now \funcGRO is shared among different sessions, the adversary can ask the environment to make queries on his behalf.
 %
 Hence, our wrapper \wrapper{\funcGRO} also puts restrictions on queries that are made by the environment.
 

@@ -43,7 +43,7 @@ We provide a sketched proof using only the common prefix, chain growth and chain
 \begin{lemma}
 	[Majority of honest profile blocks]
 	\label{lemma:good-profile-blocks}
-	If the properties as in~\cref{lemma:blockchain-properties} are not violated during the execution, then in an execution of \protocFairLedger over a lifetime of $L = \poly(\kappa)$ rounds, for any segmentation of the blockchain of $\PBWindowLen = \Theta(\CPLen)$ consecutive blocks, the majority of the profile blocks included are produced by honest parties.
+	If common prefix, chain growth and chain quality properties (with the same parameters as those in~\cref{lemma:blockchain-properties}) are not violated during the execution, then in an execution of \protocFairLedger over a lifetime of $L = \poly(\kappa)$ rounds, for any segmentation of the blockchain of $\PBWindowLen = \Theta(\CPLen)$ consecutive blocks, the majority of the profile blocks included are produced by honest parties.
 \end{lemma}
 
 

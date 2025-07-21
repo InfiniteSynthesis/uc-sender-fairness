@@ -24,13 +24,13 @@
 
 		\State{Let $\vec{\tx} = (\tx_1, \ldots , \tx_{|\mathtt{NxtBC}_i|})$ denote the transactions of $\mathtt{NxtBC}_i$}
 
-		\If{$\tx_1$ is not a coinbase trasnaction}
+		\If{$\tx_1$ is not a coinbase transaction}
 		\State{\Return \txSeqProposalDefault}
 		\Else
 
 		\State{$\txSeqProposal_i \gets \tx_1$}
 
-		\For{$j = 2$ \textbf{to} $| \mathtt{NxtBC} |$}
+		\For{$j = 2$ \textbf{to} $| \mathtt{NxtBC}_i |$}
 
 		\State{$\st_i \gets \blockify(\txSeqProposal_i)$}
 

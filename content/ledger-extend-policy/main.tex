@@ -23,7 +23,7 @@ In order to capture order fairness and towards a more modular design of the core
 %
 To improve accessibility, we mark in \revisedText{blue} the differences compared with the original \textsf{ExtendPolicy} in~\cite{C:BMTZ17}.
 
-Upon receiving a proposed block from the adversary, \textsf{ExtendPolicy} iterates all transactions; for each transaction \tx, its \emph{order} and validity with respect to the current state and buffer is evaluated.
+Upon receiving a proposed block from the adversary, \textsf{ExtendPolicy} iterates over all transactions; for each transaction \tx, its \emph{order} and validity with respect to the current state and buffer is evaluated.
 %
 If \tx turns out to be a valid transaction and extends the ledger following the fair-order policy, the algorithm goes for the next transaction; otherwise, it aborts and returns default blocks from \textsf{DefaultExtension}.
 %

@@ -1,7 +1,7 @@
 \subsection{Composable Guarantees}
 \label{subsec:composable-guarantees}
 
-\cref{subsec:blockchain-security-properties} shows that when the simulator jointly builds the blockchain with the black-box adversary, bad events regarding the violation of good blockchain properties, namely \badCP, \badCQ, \badCG and \badProfile, happens with negligible probability.
+\cref{subsec:blockchain-security-properties} shows that when the simulator jointly builds the blockchain with the black-box adversary, bad events regarding the violation of good blockchain properties, namely \badCP, \badCQ, \badCG and \badProfile, happen with negligible probability.
 %
 We next prove that the simulator \simulator can simulate the transaction encryption mechanism well, by showing that all bad events \badTicket, \badNIZK and \badDec happen with negligible probability.
 %
@@ -49,7 +49,7 @@ First, we consider \badTicket which implies that the adversary \adv can send an 
 	%
 	For each random subset selection, the probability that no honest key is selected is bounded by $(1 - p)^m < \exp(-\Omega(\polylog\kappa))$, by selecting $n \cdot \poly(\kappa)$ we get $\Pr[E] = 1 - (1 - \exp(-\Omega(\polylog\kappa)))^{n \cdot \poly(\kappa)} = \exp(-\Omega(\polylog(\kappa)) + \ln n)$ which is negligible in $\kappa$.
 
-	Now it suffices to show that by replacing the random number with $\fPRF(\mathsf{key}, h)$, for each ticket there is still at least one key controlled by honest party get selected.
+	Now it suffices to show that by replacing the random number with $\fPRF(\mathsf{key}, h)$, for each ticket there is still at least one honest key that gets selected.
 	%
 	This can be proved by a reduction to the indistinguishability experiment of the underlying pseudorandom function \fPRF which we omit here (note that while each enclave possesses her own key, since the total number of the enclaves are polynomially bounded this does not hurt the argument).
 \end{proof}
